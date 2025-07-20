@@ -3,4 +3,19 @@ export PYTHONDONTWRITEBYTECODE := 1
 
 .PHONY: run-ipython
 run-ipython:
-	@uvx ipython
+	@uvx --with . \
+		--env-file .env \
+		ipython
+
+.PHONY: run-pytest
+run-pytest:
+	@uvx --with . \
+		pytest \
+		-v
+
+
+.PHONY: run-ruff --with .
+run-ruff:
+	@uvx --with . \
+		ruff check \
+		src tests

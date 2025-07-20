@@ -1,0 +1,2 @@
+class BedrockClientError(Exception):
+    pass

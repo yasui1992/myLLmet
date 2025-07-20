@@ -1,0 +1,25 @@
+[project]
+name = "myllmet"
+version = "0.1.0"
+description = "A personal LLM evaluation project"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3<2.0,>=1.39.0"
+]
+
+[dependency-groups]
+dev = [
+    "boto3-stubs[bedrock]<2.0,>=1.39.0",
+]
+
+[tool.ruff]
+exclude = [".venv"]
+line-length = 88
+indent-width = 4
+
+lint.select = ["E", "W", "F", "Q"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
