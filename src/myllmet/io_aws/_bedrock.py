@@ -4,9 +4,14 @@ from .exceptions import BedrockClientError
 
 
 class BedrockClient:
-    def __init__(self, model_id: str):
+    def __init__(
+        self,
+        model_id: str,
+        converse_kwargs: dict | None = None
+    ):
         self.model_id = model_id
         self._client = boto3.client("bedrock-runtime")
+        self.converse_kwargs = converse_kwargs
 
     def _parse_response(self, response) -> str:
         stop_reason = response["stopReason"]
@@ -33,7 +38,7 @@ class BedrockClient:
         return contents[0]["text"]
 
 
-    def single_turn_chat(self, user_text: str) -> str:
+    def single_turn_chat(self, user_text: str, **kwargs) -> str:
         messages = [
             {
                 "role": "user",
@@ -43,7 +48,8 @@ class BedrockClient:
 
         response = self._client.converse(
             modelId=self.model_id,
-            messages=messages
+            messages=messages,
+            **self.converse_kwargs or {},
         )
 
         llm_text = self._parse_response(response)
