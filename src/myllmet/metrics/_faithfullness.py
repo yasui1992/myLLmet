@@ -47,7 +47,11 @@ class Faithfulness:
         self._claim_extractor_instruction = None
         self._faithfulness_judge_instruction = None
 
-    def _extract_claims(self, question: str, answer: str) -> ClaimExtractorResult:
+    def _extract_claims(
+        self,
+        question: str,
+        answer: str
+    ) -> ClaimExtractorResult:
         system = [{
             "text": self._claim_extractor_instruction \
                 or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
@@ -69,7 +73,7 @@ class Faithfulness:
         self,
         retrived_contexts: list[str],
         claims: list[str]
-    ) -> ClaimExtractorResult:
+    ) -> FaithfulnessJudgeResult:
 
         system = [{
             "text": self._faithfulness_judge_instruction \
