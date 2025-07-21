@@ -1,4 +1,4 @@
-from ._faithfullness import Faithfulness
+from ._faithfulness import Faithfulness
 
 
 __all__ = [
