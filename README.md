@@ -1,7 +1,8 @@
 # myLLmet
 
 A personal LLM evaluation project — the name stands for **my LLM metrics**.  
-Inspired by tools like [Ragas](https://github.com/explodinggradients/ragas), but reimplemented from scratch to better understand how LLM evaluation works.
+Inspired by tools like [Ragas](https://github.com/explodinggradients/ragas), but reimplemented from scratch to better understand how LLM evaluation works.  
+The LLM used in this project is provided by AWS Bedrock.
 
 ## License
 
