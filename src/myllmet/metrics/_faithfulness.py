@@ -47,7 +47,11 @@ class Faithfulness:
         self._claim_extractor_instruction = None
         self._faithfulness_judge_instruction = None
 
-    def _extract_claims(self, question: str, answer: str) -> ClaimExtractorResult:
+    def _extract_claims(
+        self,
+        question: str,
+        answer: str
+    ) -> ClaimExtractorResult:
         system = [{
             "text": self._claim_extractor_instruction \
                 or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
@@ -67,16 +71,16 @@ class Faithfulness:
 
     def _judge_faithfulness(
         self,
-        retrived_contexts: list[str],
+        retrieved_contexts: list[str],
         claims: list[str]
-    ) -> ClaimExtractorResult:
+    ) -> FaithfulnessJudgeResult:
 
         system = [{
             "text": self._faithfulness_judge_instruction \
                 or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
         }]
 
-        contexts_as_text = "\n".join(retrived_contexts)
+        contexts_as_text = "\n".join(retrieved_contexts)
         claims_as_text = "\n".join(claims)
 
         user_input = (
@@ -101,18 +105,18 @@ class Faithfulness:
         self,
         question: str,
         answer: str,
-        retrived_contexts: list[str] | None = None,
+        retrieved_contexts: list[str] | None = None,
         ground_truth: str | None = None,  # noqa: F401
     ) -> float:
 
-        if retrived_contexts is None:
+        if retrieved_contexts is None:
             raise ValueError(
-                "`retrived_contexts` must be provided "
+                "`retrieved_contexts` must be provided "
                 "in Faithfulness score calculation."
             )
 
         claims = self._extract_claims(question, answer)["claims"]
-        verdicts = self._judge_faithfulness(retrived_contexts, claims)["verdict"]
+        verdicts = self._judge_faithfulness(retrieved_contexts, claims)["verdict"]
 
         if len(claims) != len(verdicts):
             raise ValueError(

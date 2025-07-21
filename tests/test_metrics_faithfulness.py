@@ -24,7 +24,7 @@ def test_score_returns_success(mock_clients):
     score = faithfulness.score(
         question="q",
         answer="a",
-        retrived_contexts=["rc1", "rc2"]
+        retrieved_contexts=["rc1", "rc2"]
     )
 
     assert score == 0.5
@@ -41,7 +41,7 @@ def test_missing_context_failed(mock_clients):
         faithfulness.score(
             question="q",
             answer="a",
-            retrived_contexts=None
+            retrieved_contexts=None
         )
 
 
@@ -59,5 +59,5 @@ def test_mismatched_claims_and_verdicts_failed(mock_clients):
         faithfulness.score(
             question="q",
             answer="a",
-            retrived_contexts=["rc1", "rc2"]
+            retrieved_contexts=["rc1", "rc2"]
         )
