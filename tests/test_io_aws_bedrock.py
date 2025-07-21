@@ -53,7 +53,7 @@ def test_single_turn_chat_success(mock_boto_client, supported_response):
     mock_boto_client.return_value = mock_client
     bedrock_client = BedrockClient(model_id="model-id")
 
-    text = bedrock_client.single_turn_chat("Hello")
+    text = bedrock_client.chat("Hello")
 
     assert text == "Hello from mock"
 
@@ -74,7 +74,7 @@ def test_single_turn_chat_kwargs_system_success(mock_boto_client, supported_resp
         converse_kwargs={"system": system}
     )
 
-    text = bedrock_client.single_turn_chat("Hello")
+    text = bedrock_client.chat("Hello")
 
     assert text == "Hello from mock"
 
@@ -96,4 +96,4 @@ def test_single_turn_chat_failed(mock_boto_client, unsupported_response):
     bedrock_client = BedrockClient(model_id="model-id")
 
     with pytest.raises(BedrockClientError):
-        bedrock_client.single_turn_chat("Hello")
+        bedrock_client.chat("Hello")

@@ -37,8 +37,7 @@ class BedrockClient:
 
         return contents[0]["text"]
 
-
-    def single_turn_chat(self, user_text: str, **kwargs) -> str:
+    def chat(self, user_text: str) -> str:
         messages = [
             {
                 "role": "user",
