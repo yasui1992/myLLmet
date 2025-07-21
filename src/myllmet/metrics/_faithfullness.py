@@ -78,7 +78,7 @@ class Faithfulness:
             f"主張: {claims_as_text}\n"
         )
 
-        claims_json = self.claim_extractor_client.chat(
+        claims_json = self.faithfulness_judge_client.chat(
             user_input,
             converse_kwargs={"system": system}
         )
