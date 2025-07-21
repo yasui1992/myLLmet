@@ -1,46 +1,45 @@
+import json
+from typing import TypedDict
+
 from myllmet.io_aws import BedrockClient
 
-_DEFAULT_INSTRUCTION = (
-    "You are an expert in Japanese language analysis.\n"
-    "Given a question and its corresponding answer, analyze the answer by breaking it down into one or more distinct claims.\n"
-    "Do not use any pronouns in the claims.\n"
-    "Each claim must be fully self-contained and understandable without relying on any prior context.\n"
-)
 
-
-class FaithfulnessClaimBreakDownPromptBuilder:
-    def __init__(
-        self,
-        instruction: str | None = None
-    ):
-        self.instruction = instruction or self._DEFAULT_INSTRUCTION
-
-    def build(self, question: str, answer: str) -> str:
-        return (
-            f"{self.instruction}\n"
-            f"Question: {question}\n"
-            f"Answer: {answer}\n"
-            "Break down the answer into distinct claims:\n"
-        )
+class ClaimExtractorResult(TypedDict):
+    claims: list[str]
 
 
 class Faithfulness:
-    def __init__(self, judger: BedrockClient):
-        self.judger = judger
+    DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION = (
+        'あなたは日本語の言語分析のAIツールです。\n'
+        '質問とそれに対応する回答が与えられたら、回答を1つ以上の明確な主張に分解してください。\n'
+        '主張には代名詞を一切使用しないでください。\n'
+        '各主張は完全に自己完結しており、それ単体で理解可能でなければなりません。前の文脈に依存してはいけません。\n'
+        '**必ず**次のJSON形式で返答してください:\n'
+        '{"claims":["主張1","主張2","主張3"]}\n\n'
+    )
 
-    def _extract_claims(self, answer: str) -> list[str]:
-        # Placeholder for claim extraction logic
-        # This should be replaced with actual logic to extract claims from the answer
-        return [answer]
-
-    def score(
+    def __init__(
         self,
-        question: str,  # noqa: F401
-        answer: str,
-        retrieved_contexts: list[str] | None = None,   # noqa: F401
-        ground_truth: str | None = None,  # noqa: F401
-    ) -> float:
-        claims = self._extract_claims(answer)
+        claim_extractor_client: BedrockClient,
+        claim_extractor_instruction: str | None = None
+    ):
+        self.claim_extractor_client = claim_extractor_client
+        self.claim_extractor_instruction = claim_extractor_instruction
 
-        for c in claims:
-            self.judger.chat()
+    def _extract_claims(self, question: str, answer: str) -> ClaimExtractorResult:
+        system = [{
+            "text": self.claim_extractor_instruction \
+                or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
+        }]
+
+        user_input = (
+            f"質問: {question}\n"
+            f"回答: {answer}\n"
+        )
+
+        claims_json = self.claim_extractor_client.chat(
+            user_input,
+            converse_kwargs={"system": system}
+        )
+
+        return json.loads(claims_json)

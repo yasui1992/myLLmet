@@ -68,13 +68,12 @@ def test_single_turn_chat_kwargs_system_success(mock_boto_client, supported_resp
     mock_client.converse.return_value = supported_response
     mock_boto_client.return_value = mock_client
 
-    system = [{"text": "You are a helpful assistant."}]
     bedrock_client = BedrockClient(
         model_id="model-id",
-        converse_kwargs={"system": system}
     )
 
-    text = bedrock_client.chat("Hello")
+    system = [{"text": "You are a helpful assistant."}]
+    text = bedrock_client.chat("Hello", converse_kwargs={"system": system})
 
     assert text == "Hello from mock"
 
