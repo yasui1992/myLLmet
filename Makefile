@@ -13,6 +13,10 @@ run-pytest:
 		pytest \
 		-v
 
+.PHONY: run-pytest-ci
+run-pytest-ci:
+	@uvx --with . \
+		pytest -q --maxfail=1 --disable-warnings
 
 .PHONY: run-ruff --with .
 run-ruff:
