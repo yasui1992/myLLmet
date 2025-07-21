@@ -11,8 +11,7 @@ class BedrockClient:
         bedrock_runtime_client: BaseClient | None = None
     ):
         self.model_id = model_id
-        self.bedrock_runtime_client = bedrock_runtime_client \
-            or boto3.client("bedrock-runtime")
+        self._client = bedrock_runtime_client or boto3.client("bedrock-runtime")
 
     def _parse_response(self, response) -> str:
         stop_reason = response["stopReason"]
@@ -46,7 +45,7 @@ class BedrockClient:
             },
         ]
 
-        response = self.bedrock_runtime_client.converse(
+        response = self._client.converse(
             modelId=self.model_id,
             messages=messages,
             **converse_kwargs or {},
