@@ -1,4 +1,5 @@
 import boto3
+from botocore.client import BaseClient
 
 from .exceptions import BedrockClientError
 
@@ -6,10 +7,11 @@ from .exceptions import BedrockClientError
 class BedrockClient:
     def __init__(
         self,
-        model_id: str
+        model_id: str,
+        bedrock_runtime_client: BaseClient | None = None
     ):
         self.model_id = model_id
-        self._client = boto3.client("bedrock-runtime")
+        self._client = bedrock_runtime_client or boto3.client("bedrock-runtime")
 
     def _parse_response(self, response) -> str:
         stop_reason = response["stopReason"]
