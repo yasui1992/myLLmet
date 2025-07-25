@@ -1,6 +1,10 @@
+import logging
 import boto3
 
 from .exceptions import BedrockClientError
+
+
+logger = logging.getLogger(__name__)
 
 
 class BedrockClient:
@@ -43,10 +47,18 @@ class BedrockClient:
             },
         ]
 
+        logger.debug(
+            f"Sending chat request to Bedrock model {self.model_id} with messages: {messages}"
+        )
+
         response = self._client.converse(
             modelId=self.model_id,
             messages=messages,
             **converse_kwargs or {},
+        )
+
+        logger.debug(
+            f"Received response from Bedrock model {self.model_id}: {response}"
         )
 
         llm_text = self._parse_response(response)
