@@ -5,7 +5,8 @@ description = "A personal LLM evaluation project"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "boto3<2.0,>=1.39.0"
+    "boto3<2.0,>=1.39.0",
+    "pydantic<3.0,>=2.11.0",
 ]
 
 [dependency-groups]
