@@ -25,23 +25,34 @@ class ClaimExtractorResult(BaseModel):
 
 
 class FaithfulnessJudgeResult(BaseModel):
-    verdict: List[SingleFaithfulnessJudgResult]
+    verdicts: List[SingleFaithfulnessJudgResult]
 
 
 class Faithfulness:
     DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION = (
-        "あなたは日本語の言語分析のAIツールです。\n"
-        "あなたのタスクは、与えられた質問と回答に対して、回答を1つ以上の主張に分解することです。\n"
+        "あなたは日本語の言語分析のAIアシスタントです。\n"
+        "あなたのタスクは、与えられた質問と回答の組に対して、回答を1つ以上の主張に分解することです。\n"
         "主張には代名詞を一切使用しないでください。\n"
         "各主張は完全に自己完結しており、それ単体で理解可能でなければなりません。前の文脈に依存してはいけません。\n"
         "\n"
         "**必ず**次のJSON Schemaに準拠した形式で、出力をJSONとして返してください。\n"
         "出力ではシングルクォートではなく、エスケープ付きのバックスラッシュを使用してください。\n"
         f"{json.dumps(ClaimExtractorResult.model_json_schema(), ensure_ascii=False)}\n"
+        "--------\n"
+        "[例]\n"
+        "ユーザー: "
+        "  質問: アルベルト・アインシュタインは、20世紀を代表する理論物理学者であり、相対性理論を提唱したことで最もよく知られています。\n"
+        "  回答: 彼はドイツ生まれの理論物理学者であり、史上最も偉大で影響力のある物理学者の一人として広く認められています。彼は相対性理論の開発で最もよく知られており、また量子力学の理論発展にも重要な貢献をしました。"
+        "\n"
+        "AIアシスタント: \n"
+        "  主張: アルベルト・アインシュタインはドイツ生まれの理論物理学者です。\n"
+        "  主張: アルベルト・アインシュタインは、史上最も偉大で影響力のある物理学者の一人として認められています。\n"
+        "  主張: アルベルト・アインシュタインは、相対性理論の提唱で最もよく知られています。\n"
+        "  主張: アルベルト・アインシュタインはまた、量子力学の理論発展にも重要な貢献をしました。\n"
     )
 
     DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION = (
-        "あなたは日本語の言語分析のAIツールです。\n"
+        "あなたは日本語の言語分析のAIアシスタントです。\n"
         "あなたのタスクは、与えられたコンテキストに基づいて、個々の主張の忠実性を判断することです。\n"
         "各主張について、文脈から直接推論できる場合は「1」、直接推論できない場合は「0」を返してください。\n"
         "\n"
@@ -98,9 +109,8 @@ class Faithfulness:
         claims_as_text = "\n".join(f"- {cl}" for cl in claims)
 
         user_input = (
-            "----------------\n"
             f"コンテキスト: {context}\n"
-            "----------------\n"
+            "--------\n"
             "主張:\n"
             f"{claims_as_text}\n"
         )
@@ -133,7 +143,8 @@ class Faithfulness:
             )
 
         claims = self._extract_claims(question, answer).claims
-        verdicts = self._judge_faithfulness(context, claims).verdict
+        verdicts = self._judge_faithfulness(context, claims).verdicts
+        verdicts_as_int = [v.verdict for v in verdicts]
 
         if len(claims) != len(verdicts):
             raise ValueError(
@@ -141,5 +152,5 @@ class Faithfulness:
                 f"does not match number of verdicts ({len(verdicts)})."
             )
 
-        score = sum(verdicts) / len(claims)
+        score = sum(verdicts_as_int) / len(claims)
         return score
