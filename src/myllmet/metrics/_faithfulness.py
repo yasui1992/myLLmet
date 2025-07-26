@@ -24,8 +24,8 @@ class Faithfulness:
         'あなたは日本語の言語分析のAIツールです。\n'
         'あなたのタスクは、与えられた質問と回答に対して、回答を1つ以上の主張に分解することです。\n'
         '主張には代名詞を一切使用しないでください。\n'
-        '各主張は完全に自己完結しており、それ単体で理解可能でなければなりません。前の文脈に依存してはいけません。\n\n'
-        'アウトプット形式:\n'
+        '各主張は完全に自己完結しており、それ単体で理解可能でなければなりません。前の文脈に依存してはいけません。\n'
+        '----------------\n'
         '**必ず**次のJSON Schemaに準拠した形式で、出力をJSONとして返してください。\n'
         '出力ではシングルクォートではなく、エスケープ付きのバックスラッシュを使用してください。\n'
         f'{json.dumps(ClaimExtractorResult.model_json_schema(), ensure_ascii=False)}\n'
@@ -34,8 +34,8 @@ class Faithfulness:
     DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION = (
         'あなたは日本語の言語分析のAIツールです。\n'
         'あなたのタスクは、与えられたコンテキストに基づいて一連の主張の忠実性を判断することです。\n'
-        '各主張について、文脈から直接推論できる場合は「1」、直接推論できない場合は「0」を返してください。\n\n'
-        'アウトプット形式:\n'
+        '各主張について、文脈から直接推論できる場合は「1」、直接推論できない場合は「0」を返してください。\n'
+        '----------------\n'
         '**必ず**次のJSON Schemaに準拠した形式で、出力をJSONとして返してください。\n'
         '出力ではシングルクォートではなく、エスケープ付きのバックスラッシュを使用してください。\n'
         f'{json.dumps(FaithfulnessJudgeResult.model_json_schema(), ensure_ascii=False)}\n'
@@ -85,10 +85,10 @@ class Faithfulness:
         }]
 
         contexts_as_text = "\n".join(retrieved_contexts)
-        claims_as_text = "\n".join(claims)
+        claims_as_text = "\n".join(f"- {c}" for c in claims)
 
         user_input = (
-            f"コンテキスト: {contexts_as_text}\n主張: {claims_as_text}\n"
+            f"コンテキスト:\n{contexts_as_text}\n\n主張:\n{claims_as_text}\n"
         )
 
         claims_json = self.faithfulness_judge_client.chat(
