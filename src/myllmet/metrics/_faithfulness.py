@@ -6,17 +6,26 @@
 
 import json
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from myllmet.io_aws import BedrockClient
 
 
+class Claim(BaseModel):
+    text: str = Field(..., description="回答から抽出された主張")
+
+class SingleFaithfulnessJudgResult(BaseModel):
+    claim: Claim = Field(..., description="与えられた主張")
+    verdict: int = Field(..., description="忠実性の判定(0/1)")
+    reason: str = Field(..., description="判定の理由")
+
+
 class ClaimExtractorResult(BaseModel):
-    claims: List[str]
+    claims: List[Claim]
 
 
 class FaithfulnessJudgeResult(BaseModel):
-    verdict: List[int]
+    verdict: List[SingleFaithfulnessJudgResult]
 
 
 class Faithfulness:
