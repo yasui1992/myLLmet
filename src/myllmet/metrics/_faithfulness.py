@@ -25,7 +25,7 @@ class Faithfulness:
         "あなたのタスクは、与えられた質問と回答に対して、回答を1つ以上の主張に分解することです。\n"
         "主張には代名詞を一切使用しないでください。\n"
         "各主張は完全に自己完結しており、それ単体で理解可能でなければなりません。前の文脈に依存してはいけません。\n"
-        "----------------\n"
+        "\n"
         "**必ず**次のJSON Schemaに準拠した形式で、出力をJSONとして返してください。\n"
         "出力ではシングルクォートではなく、エスケープ付きのバックスラッシュを使用してください。\n"
         f"{json.dumps(ClaimExtractorResult.model_json_schema(), ensure_ascii=False)}\n"
@@ -33,9 +33,9 @@ class Faithfulness:
 
     DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION = (
         "あなたは日本語の言語分析のAIツールです。\n"
-        "あなたのタスクは、与えられたコンテキストに基づいて一連の主張の忠実性を判断することです。\n"
+        "あなたのタスクは、与えられたコンテキストに基づいて、個々の主張の忠実性を判断することです。\n"
         "各主張について、文脈から直接推論できる場合は「1」、直接推論できない場合は「0」を返してください。\n"
-        "----------------\n"
+        "\n"
         "**必ず**次のJSON Schemaに準拠した形式で、出力をJSONとして返してください。\n"
         "出力ではシングルクォートではなく、エスケープ付きのバックスラッシュを使用してください。\n"
         f"{json.dumps(FaithfulnessJudgeResult.model_json_schema(), ensure_ascii=False)}\n"
@@ -63,7 +63,8 @@ class Faithfulness:
         }]
 
         user_input = (
-            f"質問: {question}\n回答: {answer}\n"
+            f"質問: {question}\n"
+            f"回答: {answer}\n"
         )
 
         verdict_json = self.claim_extractor_client.chat(
@@ -75,7 +76,7 @@ class Faithfulness:
 
     def _judge_faithfulness(
         self,
-        retrieved_contexts: list[str],
+        context: str,
         claims: list[str]
     ) -> FaithfulnessJudgeResult:
 
@@ -84,11 +85,15 @@ class Faithfulness:
                 or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
         }]
 
-        contexts_as_text = "\n".join(retrieved_contexts)
-        claims_as_text = "\n".join(f"- {c}" for c in claims)
+        context
+        claims_as_text = "\n".join(f"- {cl}" for cl in claims)
 
         user_input = (
-            f"コンテキスト:\n{contexts_as_text}\n\n主張:\n{claims_as_text}\n"
+            "----------------\n"
+            f"コンテキスト: {context}\n"
+            "----------------\n"
+            "主張:\n"
+            f"{claims_as_text}\n"
         )
 
         claims_json = self.faithfulness_judge_client.chat(
@@ -108,18 +113,18 @@ class Faithfulness:
         self,
         question: str,
         answer: str,
-        retrieved_contexts: list[str] | None = None,
+        context: str | None = None,
         ground_truth: str | None = None,  # noqa: F401
     ) -> float:
 
-        if retrieved_contexts is None:
+        if context is None:
             raise ValueError(
-                "`retrieved_contexts` must be provided "
+                "`context` must be provided "
                 "in Faithfulness score calculation."
             )
 
         claims = self._extract_claims(question, answer).claims
-        verdicts = self._judge_faithfulness(retrieved_contexts, claims).verdict
+        verdicts = self._judge_faithfulness(context, claims).verdict
 
         if len(claims) != len(verdicts):
             raise ValueError(
