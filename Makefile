@@ -23,3 +23,10 @@ run-ruff:
 	@uvx --with . \
 		ruff check \
 		src tests
+
+.PHONY: run-ruff-fix
+run-ruff-fix:
+	@uvx --with . \
+		ruff check \
+		src tests \
+		--fix
