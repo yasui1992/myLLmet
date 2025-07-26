@@ -18,8 +18,15 @@ run-pytest-ci:
 	@uvx --with . \
 		pytest -q --maxfail=1 --disable-warnings
 
-.PHONY: run-ruff --with .
+.PHONY: run-ruff
 run-ruff:
 	@uvx --with . \
 		ruff check \
 		src tests
+
+.PHONY: run-ruff-fix
+run-ruff-fix:
+	@uvx --with . \
+		ruff check \
+		src tests \
+		--fix

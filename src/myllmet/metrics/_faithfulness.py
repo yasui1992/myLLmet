@@ -5,35 +5,40 @@
 
 
 import json
-from typing import TypedDict
+from typing import List
+from pydantic import BaseModel
 
 from myllmet.io_aws import BedrockClient
 
 
-class ClaimExtractorResult(TypedDict):
-    claims: list[str]
+class ClaimExtractorResult(BaseModel):
+    claims: List[str]
 
 
-class FaithfulnessJudgeResult(TypedDict):
-    verdict: list[int]
+class FaithfulnessJudgeResult(BaseModel):
+    verdict: List[int]
 
 
 class Faithfulness:
     DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION = (
-        'あなたは日本語の言語分析のAIツールです。\n'
-        'あなたのタスクは、与えられた質問と回答に対して、回答を1つ以上の主張に分解することです。\n'
-        '主張には代名詞を一切使用しないでください。\n'
-        '各主張は完全に自己完結しており、それ単体で理解可能でなければなりません。前の文脈に依存してはいけません。\n'
-        '**必ず**次のJSON形式で返答してください:\n'
-        '{"claims":["主張1","主張2","主張3"]}\n\n'
+        "あなたは日本語の言語分析のAIツールです。\n"
+        "あなたのタスクは、与えられた質問と回答に対して、回答を1つ以上の主張に分解することです。\n"
+        "主張には代名詞を一切使用しないでください。\n"
+        "各主張は完全に自己完結しており、それ単体で理解可能でなければなりません。前の文脈に依存してはいけません。\n"
+        "----------------\n"
+        "**必ず**次のJSON Schemaに準拠した形式で、出力をJSONとして返してください。\n"
+        "出力ではシングルクォートではなく、エスケープ付きのバックスラッシュを使用してください。\n"
+        f"{json.dumps(ClaimExtractorResult.model_json_schema(), ensure_ascii=False)}\n"
     )
 
     DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION = (
-        'あなたは日本語の言語分析のAIツールです。\n'
-        'あなたのタスクは、与えられたコンテキストに基づいて一連の主張の忠実性を判断することです。\n'
-        '各主張について、文脈から直接推論できる場合は「1」、直接推論できない場合は「0」を返してください。\n'
-        '**必ず**次のJSON形式で返答してください:\n'
-        '{"verdict": [1, 0, 1]}\n\n'
+        "あなたは日本語の言語分析のAIツールです。\n"
+        "あなたのタスクは、与えられたコンテキストに基づいて一連の主張の忠実性を判断することです。\n"
+        "各主張について、文脈から直接推論できる場合は「1」、直接推論できない場合は「0」を返してください。\n"
+        "----------------\n"
+        "**必ず**次のJSON Schemaに準拠した形式で、出力をJSONとして返してください。\n"
+        "出力ではシングルクォートではなく、エスケープ付きのバックスラッシュを使用してください。\n"
+        f"{json.dumps(FaithfulnessJudgeResult.model_json_schema(), ensure_ascii=False)}\n"
     )
 
     def __init__(
@@ -58,8 +63,7 @@ class Faithfulness:
         }]
 
         user_input = (
-            f"質問: {question}\n"
-            f"回答: {answer}\n"
+            f"質問: {question}\n回答: {answer}\n"
         )
 
         verdict_json = self.claim_extractor_client.chat(
@@ -67,7 +71,7 @@ class Faithfulness:
             converse_kwargs={"system": system}
         )
 
-        return json.loads(verdict_json)
+        return ClaimExtractorResult.model_validate_json(verdict_json)
 
     def _judge_faithfulness(
         self,
@@ -81,11 +85,10 @@ class Faithfulness:
         }]
 
         contexts_as_text = "\n".join(retrieved_contexts)
-        claims_as_text = "\n".join(claims)
+        claims_as_text = "\n".join(f"- {c}" for c in claims)
 
         user_input = (
-            f"コンテキスト: {contexts_as_text}\n"
-            f"主張: {claims_as_text}\n"
+            f"コンテキスト:\n{contexts_as_text}\n\n主張:\n{claims_as_text}\n"
         )
 
         claims_json = self.faithfulness_judge_client.chat(
@@ -93,7 +96,7 @@ class Faithfulness:
             converse_kwargs={"system": system}
         )
 
-        return json.loads(claims_json)
+        return FaithfulnessJudgeResult.model_validate_json(claims_json)
 
     def set_claim_extractor_instruction(self, instruction: str) -> None:
         self._claim_extractor_instruction = instruction
@@ -115,8 +118,8 @@ class Faithfulness:
                 "in Faithfulness score calculation."
             )
 
-        claims = self._extract_claims(question, answer)["claims"]
-        verdicts = self._judge_faithfulness(retrieved_contexts, claims)["verdict"]
+        claims = self._extract_claims(question, answer).claims
+        verdicts = self._judge_faithfulness(retrieved_contexts, claims).verdict
 
         if len(claims) != len(verdicts):
             raise ValueError(
