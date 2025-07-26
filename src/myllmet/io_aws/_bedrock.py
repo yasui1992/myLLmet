@@ -17,12 +17,13 @@ class BedrockClient:
         self,
         model_id: str,
         max_attempts: int = 5,
-        max_wait: int = 60
+        max_wait: int = 60,
+        bedrock_runtime_client: BaseClient | None = None
     ):
         self.model_id = model_id
         self.max_attempts = max_attempts
         self.max_wait = max_wait
-        self._client = boto3.client("bedrock-runtime")
+        self._client = bedrock_runtime_client or boto3.client("bedrock-runtime")
 
     def _parse_response(self, response) -> str:
         stop_reason = response["stopReason"]
