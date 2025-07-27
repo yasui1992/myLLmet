@@ -4,7 +4,7 @@
 # No source code from RAGAS has been copied or included.
 
 
-from typing import List
+from typing import List, Optional
 import logging
 import json
 from pydantic import BaseModel, Field
@@ -101,7 +101,7 @@ class Faithfulness:
     def _judge_faithfulness(
         self,
         context: str,
-        claims: list[str]
+        claims: List[str]
     ) -> FaithfulnessJudgeResult:
 
         system = [{
@@ -136,8 +136,8 @@ class Faithfulness:
         self,
         question: str,
         answer: str,
-        context: str | None = None,
-        ground_truth: str | None = None,  # noqa: F401
+        context: Optional[str] = None,
+        ground_truth: Optional[str] = None,  # noqa: F401
     ) -> float:
 
         if context is None:
