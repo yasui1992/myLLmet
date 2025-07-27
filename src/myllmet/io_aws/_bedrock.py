@@ -1,3 +1,4 @@
+from typing import Optional
 import logging
 import json
 import time
@@ -18,7 +19,7 @@ class BedrockClient:
         model_id: str,
         max_attempts: int = 5,
         max_wait: int = 60,
-        bedrock_runtime_client: BaseClient | None = None
+        bedrock_runtime_client: Optional[BaseClient] = None
     ):
         self.model_id = model_id
         self.max_attempts = max_attempts
@@ -63,7 +64,7 @@ class BedrockClient:
         logger.debug(f"Received response: {json.dumps(response, ensure_ascii=False)}")
         return response
 
-    def chat(self, user_text: str, *, converse_kwargs: dict | None = None) -> str:
+    def chat(self, user_text: str, *, converse_kwargs=None) -> str:
         messages = [
             {
                 "role": "user",
