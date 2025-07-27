@@ -1,5 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
+import json
+
 from myllmet.metrics import Faithfulness
 
 
@@ -8,13 +10,13 @@ def mock_clients():
     mock_claim_extractor = MagicMock()
     mock_faithfulness_judge = MagicMock()
 
-    mock_claim_extractor.chat.return_value = '{"claims": [{"text": "c1"}, {"text": "c2"}]}'
-    mock_faithfulness_judge.chat.return_value = (
-        '{"verdicts": ['
-        '{"claim": {"text": "The sky is green."}, "verdict": "1", "reason": "The claim is mostly accurate."},'
-        '{"claim": {"text": "Water is dry."}, "verdict": "0", "reason": "Water is inherently wet."}'
-        ']}'
-    )
+    mock_claim_extractor.chat.return_value = json.dumps({"claims": [{"text": "c1"}, {"text": "c2"}]})
+    mock_faithfulness_judge.chat.return_value = json.dumps({
+        "verdicts": [
+            {"claim": {"text": "The sky is green."}, "verdict": "1", "reason": "The claim is mostly accurate."},
+            {"claim": {"text": "Water is dry."}, "verdict": "0", "reason": "Water is inherently wet."}
+        ]
+    })
 
     return mock_claim_extractor, mock_faithfulness_judge
 
