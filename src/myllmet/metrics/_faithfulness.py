@@ -4,11 +4,15 @@
 # No source code from RAGAS has been copied or included.
 
 
-import json
 from typing import List
+import logging
+import json
 from pydantic import BaseModel, Field
 
 from myllmet.io_aws import BedrockClient
+
+
+logger = logging.getLogger(__name__)
 
 
 class Claim(BaseModel):
@@ -140,6 +144,11 @@ class Faithfulness:
             raise ValueError(
                 "`context` must be provided "
                 "in Faithfulness score calculation."
+            )
+        if ground_truth is not None:
+            logger.warning(
+                "`ground_truth` is not used in Faithfulness score calculation. "
+                "It will be ignored."
             )
 
         claims = self._extract_claims(question, answer).claims
