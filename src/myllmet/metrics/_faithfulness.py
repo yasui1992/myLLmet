@@ -83,19 +83,20 @@ class Faithfulness:
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
 
-        self.claim_extractor_instruction = claim_extractor_instruction
-        self.faithfulness_judge_instruction = faithfulness_judge_instruction
-        self._claim_extractor_examples = claim_extractor_examples or self.DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
+        self._claim_extractor_instruction = claim_extractor_instruction \
+            or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
+        self._faithfulness_judge_instruction = faithfulness_judge_instruction \
+            or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
+        self._claim_extractor_examples = claim_extractor_examples \
+            or self.DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
 
     def _extract_claims(
         self,
         question: str,
         answer: str
     ) -> ClaimExtractorResult:
-        system = [{
-            "text": self.claim_extractor_instruction \
-                or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
-        }]
+
+        system = [{"text": self._claim_extractor_instruction}]
         examples = []
         for ex in self._claim_extractor_examples:
             examples += [
@@ -131,11 +132,7 @@ class Faithfulness:
         claims: List[str]
     ) -> FaithfulnessJudgeResult:
 
-        system = [{
-            "text": self.faithfulness_judge_instruction \
-                or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
-        }]
-
+        system = [{"text": self._faithfulness_judge_instruction}]
         input_text = json.dumps(
             {
                 "context": context,
@@ -150,12 +147,6 @@ class Faithfulness:
         )
 
         return FaithfulnessJudgeResult.model_validate_json(claims_json)
-
-    def set_claim_extractor_instruction(self, instruction: str) -> None:
-        self.claim_extractor_instruction = instruction
-
-    def set_faithfulness_judge_instruction(self, instruction: str) -> None:
-        self.faithfulness_judge_instruction = instruction
 
     def score(
         self,
