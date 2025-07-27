@@ -15,17 +15,14 @@ from myllmet.io_aws import BedrockClient
 logger = logging.getLogger(__name__)
 
 
-class Claim(BaseModel):
-    text: str = Field(..., description="回答から抽出された主張")
-
 class SingleFaithfulnessJudgResult(BaseModel):
-    claim: Claim = Field(..., description="与えられた主張")
+    claim: str = Field(..., description="与えられた主張")
     verdict: int = Field(..., description="忠実性の判定(0/1)")
     reason: str = Field(..., description="判定の理由")
 
 
 class ClaimExtractorResult(BaseModel):
-    claims: List[Claim]
+    claims: List[str] = Field(..., description="抽出された主張のリスト")
 
 
 class FaithfulnessJudgeResult(BaseModel):
@@ -42,19 +39,6 @@ class Faithfulness:
         "**必ず**次のJSON Schemaに準拠した形式で、出力をJSONとして返してください。\n"
         "出力ではシングルクォートではなく、エスケープ付きのバックスラッシュを使用してください。\n"
         f"{json.dumps(ClaimExtractorResult.model_json_schema(), ensure_ascii=False)}\n"
-        "--------\n"
-        "[例]\n"
-        "ユーザー: "
-        "  質問: アルベルト・アインシュタインは、20世紀を代表する理論物理学者であり、"
-        "相対性理論を提唱したことで最もよく知られています。\n"
-        "  回答: 彼はドイツ生まれの理論物理学者であり、"
-        "史上最も偉大で影響力のある物理学者の一人として広く認められています。"
-        "彼は相対性理論の開発で最もよく知られており、また量子力学の理論発展にも重要な貢献をしました。\n"
-        "AIアシスタント: \n"
-        "  主張: アルベルト・アインシュタインはドイツ生まれの理論物理学者です。\n"
-        "  主張: アルベルト・アインシュタインは、史上最も偉大で影響力のある物理学者の一人として認められています。\n"
-        "  主張: アルベルト・アインシュタインは、相対性理論の提唱で最もよく知られています。\n"
-        "  主張: アルベルト・アインシュタインはまた、量子力学の理論発展にも重要な貢献をしました。\n"
     )
 
     DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION = (
@@ -67,19 +51,41 @@ class Faithfulness:
         f"{json.dumps(FaithfulnessJudgeResult.model_json_schema(), ensure_ascii=False)}\n"
     )
 
+    DEFAULT_CLAIM_EXTRACTOR_EXAMPLES = [
+        {
+            "user": {
+                "question": "アルベルト・アインシュタインは、20世紀を代表する理論物理学者であり、相対性理論を提唱したことで最もよく知られています。",
+                "answer": (
+                    "彼はドイツ生まれの理論物理学者であり、史上最も偉大で影響力のある物理学者の一人として広く認められています。"
+                    "彼は相対性理論の開発で最もよく知られており、また量子力学の理論発展にも重要な貢献をしました。\n"
+                )
+            },
+            "assistant": {
+                "claims": [
+                    "アルベルト・アインシュタインはドイツ生まれの理論物理学者です。",
+                    "アルベルト・アインシュタインは、史上最も偉大で影響力のある物理学者の一人として認められています。",
+                    "アルベルト・アインシュタインは、相対性理論の提唱で最もよく知られています。",
+                    "アルベルト・アインシュタインはまた、量子力学の理論発展にも重要な貢献をしました。"
+                ]
+            }
+        }
+    ]
+
     def __init__(
         self,
         claim_extractor_client: BedrockClient,
         faithfulness_judge_client: BedrockClient,
         *,
         claim_extractor_instruction: Optional[str] = None,
-        faithfulness_judge_instruction: Optional[str] = None
+        faithfulness_judge_instruction: Optional[str] = None,
+        claim_extractor_examples: Optional[List] = None,
     ):
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
 
         self.claim_extractor_instruction = claim_extractor_instruction
         self.faithfulness_judge_instruction = faithfulness_judge_instruction
+        self._claim_extractor_examples = claim_extractor_examples or self.DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
 
     def _extract_claims(
         self,
@@ -90,14 +96,30 @@ class Faithfulness:
             "text": self.claim_extractor_instruction \
                 or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
         }]
+        examples = []
+        for ex in self._claim_extractor_examples:
+            examples += [
+                {
+                    "role": "user",
+                    "content": json.dumps(ex["user"], ensure_ascii=False)
+                },
+                {
+                    "role": "assistant",
+                    "content": json.dumps(ex["assistant"], ensure_ascii=False)
+                }
+            ]
 
-        user_input = (
-            f"質問: {question}\n"
-            f"回答: {answer}\n"
+        input_text = json.dumps(
+            {
+                "question": question,
+                "answer": answer
+            },
+            ensure_ascii=False
         )
 
         verdict_json = self.claim_extractor_client.chat(
-            user_input,
+            input_text,
+            chat_history=examples,
             converse_kwargs={"system": system}
         )
 
@@ -114,18 +136,16 @@ class Faithfulness:
                 or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
         }]
 
-        context
-        claims_as_text = "\n".join(f"- {cl}" for cl in claims)
-
-        user_input = (
-            f"コンテキスト: {context}\n"
-            "--------\n"
-            "主張:\n"
-            f"{claims_as_text}\n"
+        input_text = json.dumps(
+            {
+                "context": context,
+                "claims": claims
+            },
+            ensure_ascii=False
         )
 
         claims_json = self.faithfulness_judge_client.chat(
-            user_input,
+            input_text,
             converse_kwargs={"system": system}
         )
 
