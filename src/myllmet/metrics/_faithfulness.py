@@ -15,17 +15,14 @@ from myllmet.io_aws import BedrockClient
 logger = logging.getLogger(__name__)
 
 
-class Claim(BaseModel):
-    text: str = Field(..., description="回答から抽出された主張")
-
 class SingleFaithfulnessJudgResult(BaseModel):
-    claim: Claim = Field(..., description="与えられた主張")
+    claim: str = Field(..., description="与えられた主張")
     verdict: int = Field(..., description="忠実性の判定(0/1)")
     reason: str = Field(..., description="判定の理由")
 
 
 class ClaimExtractorResult(BaseModel):
-    claims: List[Claim]
+    claims: List[str] = Field(..., description="抽出された主張のリスト")
 
 
 class FaithfulnessJudgeResult(BaseModel):
@@ -39,22 +36,8 @@ class Faithfulness:
         "主張には代名詞を一切使用しないでください。\n"
         "各主張は完全に自己完結しており、それ単体で理解可能でなければなりません。前の文脈に依存してはいけません。\n"
         "\n"
-        "**必ず**次のJSON Schemaに準拠した形式で、出力をJSONとして返してください。\n"
-        "出力ではシングルクォートではなく、エスケープ付きのバックスラッシュを使用してください。\n"
+        "次のスキーマに準拠した形式で、出力をJSON文字列として返してください。\n"
         f"{json.dumps(ClaimExtractorResult.model_json_schema(), ensure_ascii=False)}\n"
-        "--------\n"
-        "[例]\n"
-        "ユーザー: "
-        "  質問: アルベルト・アインシュタインは、20世紀を代表する理論物理学者であり、"
-        "相対性理論を提唱したことで最もよく知られています。\n"
-        "  回答: 彼はドイツ生まれの理論物理学者であり、"
-        "史上最も偉大で影響力のある物理学者の一人として広く認められています。"
-        "彼は相対性理論の開発で最もよく知られており、また量子力学の理論発展にも重要な貢献をしました。\n"
-        "AIアシスタント: \n"
-        "  主張: アルベルト・アインシュタインはドイツ生まれの理論物理学者です。\n"
-        "  主張: アルベルト・アインシュタインは、史上最も偉大で影響力のある物理学者の一人として認められています。\n"
-        "  主張: アルベルト・アインシュタインは、相対性理論の提唱で最もよく知られています。\n"
-        "  主張: アルベルト・アインシュタインはまた、量子力学の理論発展にも重要な貢献をしました。\n"
     )
 
     DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION = (
@@ -62,10 +45,62 @@ class Faithfulness:
         "あなたのタスクは、与えられたコンテキストに基づいて、個々の主張の忠実性を判断することです。\n"
         "各主張について、文脈から直接推論できる場合は「1」、直接推論できない場合は「0」を返してください。\n"
         "\n"
-        "**必ず**次のJSON Schemaに準拠した形式で、出力をJSONとして返してください。\n"
-        "出力ではシングルクォートではなく、エスケープ付きのバックスラッシュを使用してください。\n"
+        "次のスキーマに準拠した形式で、出力をJSON文字列として返してください。\n"
         f"{json.dumps(FaithfulnessJudgeResult.model_json_schema(), ensure_ascii=False)}\n"
     )
+
+    DEFAULT_CLAIM_EXTRACTOR_EXAMPLES = [
+        {
+            "user": {
+                "question": "アルベルト・アインシュタインについて教えてください。",
+                "answer": (
+                    "彼はドイツ生まれの理論物理学者であり、史上最も偉大で影響力のある物理学者の一人として広く認められています。"
+                    "彼は相対性理論の提唱で最もよく知られており、また量子力学の理論発展にも重要な貢献をしました。"
+                )
+            },
+            "assistant": {
+                "claims": [
+                    "アルベルト・アインシュタインは、ドイツ生まれの理論物理学者です。",
+                    "アルベルト・アインシュタインは、史上最も偉大で影響力のある物理学者の一人として認められています。",
+                    "アルベルト・アインシュタインは、相対性理論の提唱で最もよく知られています。",
+                    "アルベルト・アインシュタインは、量子力学の理論発展に重要な貢献をしました。"
+                ]
+            }
+        }
+    ]
+
+    DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES = [
+        {
+            "user": {
+                "question": "アルベルト・アインシュタインについて教えてください。",
+                "context": "彼はドイツ生まれの理論物理学者であり、相対性理論の提唱で知られています。",
+                "claims": [
+                    {"text": "アルベルト・アインシュタインは、ドイツ生まれの理論物理学者です。"},
+                    {"text": "アルベルト・アインシュタインは、アメリカ生まれの理論物理学者です。"},
+                    {"text": "アルベルト・アインシュタインは、量子力学の理論発展に重要な貢献をしました。"},
+                ]
+            },
+            "assistant": {
+                "verdicts": [
+                    {
+                        "claim": "アルベルト・アインシュタインは、ドイツ生まれの理論物理学者です。",
+                        "verdict": "1",
+                        "reason": "コンテキストの記載と合致しています。"
+                    },
+                    {
+                        "claim": "アルベルト・アインシュタインは、アメリカ生まれの理論物理学者です。",
+                         "verdict": "0",
+                         "reason": "コンテキストによると、アインシュタインはドイツ生まれです"
+                    },
+                    {
+                        "claim": "アルベルト・アインシュタインは、量子力学の理論発展に重要な貢献をしました。",
+                         "verdict": "0",
+                         "reason": "コンテキストには、アインシュタインの量子力学への貢献は記載されていません。"
+                    }
+                ]
+            }
+        }
+    ]
 
     def __init__(
         self,
@@ -73,31 +108,53 @@ class Faithfulness:
         faithfulness_judge_client: BedrockClient,
         *,
         claim_extractor_instruction: Optional[str] = None,
-        faithfulness_judge_instruction: Optional[str] = None
+        faithfulness_judge_instruction: Optional[str] = None,
+        claim_extractor_examples: Optional[List] = None,
+        faithfulness_judge_examples: Optional[List] = None
     ):
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
 
-        self.claim_extractor_instruction = claim_extractor_instruction
-        self.faithfulness_judge_instruction = faithfulness_judge_instruction
+        self._claim_extractor_instruction = claim_extractor_instruction \
+            or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
+        self._faithfulness_judge_instruction = faithfulness_judge_instruction \
+            or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
+        self._claim_extractor_examples = claim_extractor_examples \
+            or self.DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
+        self._faithfulness_judge_examples = faithfulness_judge_examples \
+            or self.DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES
 
     def _extract_claims(
         self,
         question: str,
         answer: str
     ) -> ClaimExtractorResult:
-        system = [{
-            "text": self.claim_extractor_instruction \
-                or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
-        }]
 
-        user_input = (
-            f"質問: {question}\n"
-            f"回答: {answer}\n"
+        system = [{"text": self._claim_extractor_instruction}]
+        examples = []
+        for ex in self._claim_extractor_examples:
+            examples += [
+                {
+                    "role": "user",
+                    "content": json.dumps(ex["user"], ensure_ascii=False)
+                },
+                {
+                    "role": "assistant",
+                    "content": json.dumps(ex["assistant"], ensure_ascii=False)
+                }
+            ]
+
+        input_text = json.dumps(
+            {
+                "question": question,
+                "answer": answer
+            },
+            ensure_ascii=False
         )
 
         verdict_json = self.claim_extractor_client.chat(
-            user_input,
+            input_text,
+            chat_history=examples,
             converse_kwargs={"system": system}
         )
 
@@ -109,33 +166,34 @@ class Faithfulness:
         claims: List[str]
     ) -> FaithfulnessJudgeResult:
 
-        system = [{
-            "text": self.faithfulness_judge_instruction \
-                or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
-        }]
+        system = [{"text": self._faithfulness_judge_instruction}]
+        examples = []
+        for ex in self._faithfulness_judge_examples:
+            examples += [
+                {
+                    "role": "user",
+                    "content": json.dumps(ex["user"], ensure_ascii=False)
+                },
+                {
+                    "role": "assistant",
+                    "content": json.dumps(ex["assistant"], ensure_ascii=False)
+                }
+            ]
 
-        context
-        claims_as_text = "\n".join(f"- {cl}" for cl in claims)
-
-        user_input = (
-            f"コンテキスト: {context}\n"
-            "--------\n"
-            "主張:\n"
-            f"{claims_as_text}\n"
+        input_text = json.dumps(
+            {
+                "context": context,
+                "claims": claims
+            },
+            ensure_ascii=False
         )
 
         claims_json = self.faithfulness_judge_client.chat(
-            user_input,
+            input_text,
             converse_kwargs={"system": system}
         )
 
         return FaithfulnessJudgeResult.model_validate_json(claims_json)
-
-    def set_claim_extractor_instruction(self, instruction: str) -> None:
-        self.claim_extractor_instruction = instruction
-
-    def set_faithfulness_judge_instruction(self, instruction: str) -> None:
-        self.faithfulness_judge_instruction = instruction
 
     def score(
         self,

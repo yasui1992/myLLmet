@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, TypedDict
 import logging
 import json
 import time
@@ -11,6 +11,11 @@ from .exceptions import BedrockClientError
 
 
 logger = logging.getLogger(__name__)
+
+
+class ChatHistory(TypedDict):
+    role: str
+    content: str
 
 
 class BedrockClient:
@@ -64,13 +69,25 @@ class BedrockClient:
         logger.debug(f"Received response: {json.dumps(response, ensure_ascii=False)}")
         return response
 
-    def chat(self, user_text: str, *, converse_kwargs=None) -> str:
-        messages = [
-            {
-                "role": "user",
-                "content": [{"text": user_text}]
-            },
-        ]
+    def chat(
+        self,
+        text: str,
+        chat_history: Optional[ChatHistory] = None,
+        *,
+        converse_kwargs=None
+    ) -> str:
+
+        messages = []
+        if chat_history is not None:
+            for entry in chat_history:
+                messages.append({
+                    "role": entry["role"],
+                    "content": [{"text": entry["content"]}]
+                })
+        messages.append({
+            "role": "user",
+            "content": [{"text": text}]
+        })
 
         for attempt in range(1, self.max_attempts + 1):
             try:
