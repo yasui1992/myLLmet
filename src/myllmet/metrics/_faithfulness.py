@@ -69,12 +69,15 @@ class Faithfulness:
         self,
         claim_extractor_client: BedrockClient,
         faithfulness_judge_client: BedrockClient,
+        *,
+        claim_extractor_instruction: Optional[str] = None,
+        faithfulness_judge_instruction: Optional[str] = None
     ):
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
 
-        self._claim_extractor_instruction = None
-        self._faithfulness_judge_instruction = None
+        self.claim_extractor_instruction = claim_extractor_instruction
+        self.faithfulness_judge_instruction = faithfulness_judge_instruction
 
     def _extract_claims(
         self,
@@ -82,7 +85,7 @@ class Faithfulness:
         answer: str
     ) -> ClaimExtractorResult:
         system = [{
-            "text": self._claim_extractor_instruction \
+            "text": self.claim_extractor_instruction \
                 or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
         }]
 
@@ -105,7 +108,7 @@ class Faithfulness:
     ) -> FaithfulnessJudgeResult:
 
         system = [{
-            "text": self._faithfulness_judge_instruction \
+            "text": self.faithfulness_judge_instruction \
                 or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
         }]
 
@@ -127,17 +130,17 @@ class Faithfulness:
         return FaithfulnessJudgeResult.model_validate_json(claims_json)
 
     def set_claim_extractor_instruction(self, instruction: str) -> None:
-        self._claim_extractor_instruction = instruction
+        self.claim_extractor_instruction = instruction
 
     def set_faithfulness_judge_instruction(self, instruction: str) -> None:
-        self._faithfulness_judge_instruction = instruction
+        self.faithfulness_judge_instruction = instruction
 
     def score(
         self,
         question: str,
         answer: str,
         context: Optional[str] = None,
-        ground_truth: Optional[str] = None,  # noqa: F401
+        ground_truth: Optional[str] = None,
     ) -> float:
 
         if context is None:
