@@ -71,6 +71,51 @@ class Faithfulness:
         }
     ]
 
+    DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES = [
+        {
+            "user": {
+                "question": "アルベルト・アインシュタインについて教えてください。",
+                "context": "彼はドイツ生まれの理論物理学者であり、相対性理論の提唱で知られています。",
+                "claims": [
+                    {"text": "アルベルト・アインシュタインは、ドイツ生まれの理論物理学者です。"},
+                    {"text": "アルベルト・アインシュタインは、アメリカ生まれの理論物理学者です。"},
+                    {"text": "相対性理論はアルベルト・アインシュタインによって提唱されました。"},
+                    {"text": "相対性理論はアイザック・ニュートンによって提唱されました。"},
+                    {"text": "アルベルト・アインシュタインは、量子力学の理論発展に重要な貢献をしました。"},
+                ]
+            },
+            "assistant": {
+                "verdicts": [
+                    {
+                        "claim": "アルベルト・アインシュタインは、ドイツ生まれの理論物理学者です。",
+                        "verdict": "1",
+                        "reason": "コンテキストの記載と合致しています。"
+                    },
+                    {
+                        "claim": "アルベルト・アインシュタインは、アメリカ生まれの理論物理学者です。",
+                         "verdict": "0",
+                         "reason": "コンテキストによると、アインシュタインはドイツ生まれです"
+                    },
+                    {
+                        "claim": "相対性理論はアルベルト・アインシュタインによって提唱されました。",
+                         "verdict": "1",
+                         "reason": "コンテキストの記載と合致しています。"
+                    },
+                    {
+                        "claim": "相対性理論はアイザック・ニュートンによって提唱されました。",
+                         "verdict": "0",
+                         "reason": "コンテキストによると、相対性理論はアインシュタインによって提唱されました。"
+                    },
+                    {
+                        "claim": "アルベルト・アインシュタインは、量子力学の理論発展に重要な貢献をしました。",
+                         "verdict": "0",
+                         "reason": "コンテキストでは、アインシュタインの量子力学への貢献は記載されていません。"
+                    }
+                ]
+            }
+        }
+    ]
+
     def __init__(
         self,
         claim_extractor_client: BedrockClient,
@@ -79,6 +124,7 @@ class Faithfulness:
         claim_extractor_instruction: Optional[str] = None,
         faithfulness_judge_instruction: Optional[str] = None,
         claim_extractor_examples: Optional[List] = None,
+        faithfulness_judge_examples: Optional[List] = None
     ):
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
@@ -89,6 +135,8 @@ class Faithfulness:
             or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
         self._claim_extractor_examples = claim_extractor_examples \
             or self.DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
+        self._faithfulness_judge_examples = faithfulness_judge_examples \
+            or self.DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES
 
     def _extract_claims(
         self,
@@ -133,6 +181,19 @@ class Faithfulness:
     ) -> FaithfulnessJudgeResult:
 
         system = [{"text": self._faithfulness_judge_instruction}]
+        examples = []
+        for ex in self._faithfulness_judge_examples:
+            examples += [
+                {
+                    "role": "user",
+                    "content": json.dumps(ex["user"], ensure_ascii=False)
+                },
+                {
+                    "role": "assistant",
+                    "content": json.dumps(ex["assistant"], ensure_ascii=False)
+                }
+            ]
+
         input_text = json.dumps(
             {
                 "context": context,
