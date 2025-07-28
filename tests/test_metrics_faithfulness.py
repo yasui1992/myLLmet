@@ -71,7 +71,8 @@ def test_mismatched_claims_and_verdicts_failed(mock_clients):
 
 def test_call_tracker_log():
     mock_tracker = MagicMock()
-    met = Faithfulness(claim_extractor_client=MagicMock(), faithfulness_judge_client=MagicMock(), tracker=mock_tracker)
+    met = Faithfulness(claim_extractor_client=MagicMock(), faithfulness_judge_client=MagicMock())
+    met.set_tracker(mock_tracker)
 
     met._extract_claims = lambda q, a: ClaimExtractorResult(claims=["c1", "c2"])
     met._judge_faithfulness = lambda ctx, claims: FaithfulnessJudgeResult(verdicts=[
