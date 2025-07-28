@@ -1,7 +1,7 @@
 from myllmet.trackers import NoOPTracker
 
 
-def test_nooptracker_log_accepts_record():
+def test_log_accepts_record():
     tracker = NoOPTracker()
 
     record = {
@@ -10,7 +10,6 @@ def test_nooptracker_log_accepts_record():
         "context": "c",
         "ground_truth": "gt",
         "score": 0.5,
-        "extra": None,
     }
 
     tracker.log(record)

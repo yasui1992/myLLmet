@@ -120,10 +120,10 @@ class Faithfulness:
         self._tracker = tracker or NoOPTracker()
         self._claim_extractor_instruction = claim_extractor_instruction \
             or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
-        self._faithfulness_judge_instruction = faithfulness_judge_instruction \
-            or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
         self._claim_extractor_examples = claim_extractor_examples \
             or self.DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
+        self._faithfulness_judge_instruction = faithfulness_judge_instruction \
+            or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
         self._faithfulness_judge_examples = faithfulness_judge_examples \
             or self.DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES
 
@@ -236,7 +236,13 @@ class Faithfulness:
                 "context": context,
                 "ground_truth": "",  # Not used in Faithfulness score calculation
                 "score": score,
-                "extras": {
+                "prompts": {
+                    "claim_extractor_instruction": self._claim_extractor_instruction,
+                    "_claim_extractor_examples": self._claim_extractor_examples,
+                    "faithfulness_judge_instruction": self._faithfulness_judge_instruction,
+                    "_faithfulness_judge_examples": self._faithfulness_judge_examples
+                },
+                "intermediates": {
                     "claims": claims,
                     "verdicts": [v.model_dump() for v in verdicts],
                 }

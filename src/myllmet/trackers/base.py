@@ -9,7 +9,8 @@ class LLMMetricsRecord(TypedDict):
     context: str
     ground_truth: str
     score: float
-    extras: Optional[Dict[str, Any]]
+    prompts: Optional[Dict[str, Any]]
+    intermediates: Optional[Dict[str, Any]]
 
 
 class BaseTracker(ABC):
