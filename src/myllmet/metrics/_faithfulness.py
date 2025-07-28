@@ -73,7 +73,6 @@ class Faithfulness:
     DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES = [
         {
             "user": {
-                "question": "アルベルト・アインシュタインについて教えてください。",
                 "context": "彼はドイツ生まれの理論物理学者であり、相対性理論の提唱で知られています。",
                 "claims": [
                     {"text": "アルベルト・アインシュタインは、ドイツ生まれの理論物理学者です。"},
@@ -108,7 +107,6 @@ class Faithfulness:
         claim_extractor_client: BedrockClient,
         faithfulness_judge_client: BedrockClient,
         *,
-        tracker: Optional[BaseTracker] = None,
         claim_extractor_instruction: Optional[str] = None,
         faithfulness_judge_instruction: Optional[str] = None,
         claim_extractor_examples: Optional[List] = None,
@@ -117,15 +115,16 @@ class Faithfulness:
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
 
-        self._tracker = tracker or NoOPTracker()
         self._claim_extractor_instruction = claim_extractor_instruction \
             or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
-        self._claim_extractor_examples = claim_extractor_examples \
-            or self.DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
         self._faithfulness_judge_instruction = faithfulness_judge_instruction \
             or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
+        self._claim_extractor_examples = claim_extractor_examples \
+            or self.DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
         self._faithfulness_judge_examples = faithfulness_judge_examples \
             or self.DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES
+
+        self._tracker = NoOPTracker()
 
     def _extract_claims(
         self,
@@ -155,13 +154,13 @@ class Faithfulness:
             ensure_ascii=False
         )
 
-        verdict_json = self.claim_extractor_client.chat(
+        result = self.claim_extractor_client.chat(
             input_text,
             chat_history=examples,
             converse_kwargs={"system": system}
         )
 
-        return ClaimExtractorResult.model_validate_json(verdict_json)
+        return ClaimExtractorResult.model_validate_json(result)
 
     def _judge_faithfulness(
         self,
@@ -191,12 +190,45 @@ class Faithfulness:
             ensure_ascii=False
         )
 
-        claims_json = self.faithfulness_judge_client.chat(
+        result = self.claim_extractor_client.chat(
             input_text,
+            chat_history=examples,
             converse_kwargs={"system": system}
         )
 
-        return FaithfulnessJudgeResult.model_validate_json(claims_json)
+        return FaithfulnessJudgeResult.model_validate_json(result)
+
+    def _log_to_tracker(
+        self,
+        question: str,
+        answer: str,
+        context: str,
+        score: float,
+        claims: List[str],
+        verdicts: List[SingleFaithfulnessJudgResult],
+    ) -> None:
+        self._tracker.log(
+            {
+                "question": question,
+                "answer": answer,
+                "context": context,
+                "ground_truth": "",  # Not used in Faithfulness score calculation
+                "score": score,
+                "prompts": {
+                    "claim_extractor_instruction": self._claim_extractor_instruction,
+                    "_claim_extractor_examples": self._claim_extractor_examples,
+                    "faithfulness_judge_instruction": self._faithfulness_judge_instruction,
+                    "_faithfulness_judge_examples": self._faithfulness_judge_examples
+                },
+                "intermediates": {
+                    "claims": claims,
+                    "verdicts": [v.model_dump() for v in verdicts],
+                }
+            }
+        )
+
+    def set_tracker(self, tracker: BaseTracker) -> None:
+        self._tracker = tracker
 
     def score(
         self,
@@ -229,23 +261,14 @@ class Faithfulness:
 
         score = sum(verdicts_as_int) / len(claims)
 
-        self._tracker.log(
-            {
-                "question": question,
-                "answer": answer,
-                "context": context,
-                "ground_truth": "",  # Not used in Faithfulness score calculation
-                "score": score,
-                "prompts": {
-                    "claim_extractor_instruction": self._claim_extractor_instruction,
-                    "_claim_extractor_examples": self._claim_extractor_examples,
-                    "faithfulness_judge_instruction": self._faithfulness_judge_instruction,
-                    "_faithfulness_judge_examples": self._faithfulness_judge_examples
-                },
-                "intermediates": {
-                    "claims": claims,
-                    "verdicts": [v.model_dump() for v in verdicts],
-                }
-            }
-        )
+        if self.tracker is not None:
+            self._log(
+                question=question,
+                answer=answer,
+                context=context,
+                score=score,
+                claims=claims,
+                verdicts=verdicts
+            )
+
         return score
