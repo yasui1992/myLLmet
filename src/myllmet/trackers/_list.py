@@ -28,12 +28,12 @@ class ListTracker(BaseTracker):
         if record.get("prompts"):
             self._prompt_records.append({
                 "id": id_,
-                "prompts": record["prompts"]
+                **record["prompts"]
             })
         if record.get("intermediates"):
             self._intermediate_records.append({
                 "id": id_,
-                "intermediates": record["intermediates"]
+                **record["intermediates"]
             })
 
     def to_pandas(self, kind: Literal["standard", "prompts", "intermediates"]) -> "pd.DataFrame":
