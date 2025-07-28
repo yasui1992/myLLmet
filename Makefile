@@ -9,13 +9,13 @@ run-ipython:
 
 .PHONY: run-pytest
 run-pytest:
-	@uvx --with . \
+	@uvx --with .[pandas] \
 		pytest \
 		-v
 
 .PHONY: run-pytest-ci
 run-pytest-ci:
-	@uvx --with . \
+	@uvx --with .[pandas] \
 		pytest -q --maxfail=1 --disable-warnings
 
 .PHONY: run-ruff
@@ -27,6 +27,7 @@ run-ruff:
 .PHONY: run-ruff-fix
 run-ruff-fix:
 	@uvx --with . \
+		--optional pandas \
 		ruff check \
 		src tests \
 		--fix

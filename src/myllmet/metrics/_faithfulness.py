@@ -10,6 +10,7 @@ import json
 from pydantic import BaseModel, Field
 
 from myllmet.io_aws import BedrockClient
+from myllmet.trackers import BaseTracker, NoOPTracker
 
 
 logger = logging.getLogger(__name__)
@@ -107,6 +108,7 @@ class Faithfulness:
         claim_extractor_client: BedrockClient,
         faithfulness_judge_client: BedrockClient,
         *,
+        tracker: Optional[BaseTracker] = None,
         claim_extractor_instruction: Optional[str] = None,
         faithfulness_judge_instruction: Optional[str] = None,
         claim_extractor_examples: Optional[List] = None,
@@ -115,12 +117,13 @@ class Faithfulness:
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
 
+        self._tracker = tracker or NoOPTracker()
         self._claim_extractor_instruction = claim_extractor_instruction \
             or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
-        self._faithfulness_judge_instruction = faithfulness_judge_instruction \
-            or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
         self._claim_extractor_examples = claim_extractor_examples \
             or self.DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
+        self._faithfulness_judge_instruction = faithfulness_judge_instruction \
+            or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
         self._faithfulness_judge_examples = faithfulness_judge_examples \
             or self.DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES
 
@@ -225,4 +228,24 @@ class Faithfulness:
             )
 
         score = sum(verdicts_as_int) / len(claims)
+
+        self._tracker.log(
+            {
+                "question": question,
+                "answer": answer,
+                "context": context,
+                "ground_truth": "",  # Not used in Faithfulness score calculation
+                "score": score,
+                "prompts": {
+                    "claim_extractor_instruction": self._claim_extractor_instruction,
+                    "_claim_extractor_examples": self._claim_extractor_examples,
+                    "faithfulness_judge_instruction": self._faithfulness_judge_instruction,
+                    "_faithfulness_judge_examples": self._faithfulness_judge_examples
+                },
+                "intermediates": {
+                    "claims": claims,
+                    "verdicts": [v.model_dump() for v in verdicts],
+                }
+            }
+        )
         return score
