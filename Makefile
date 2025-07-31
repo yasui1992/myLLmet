@@ -38,3 +38,17 @@ run-mypy:
 		--all-extras \
 		mypy \
 		src
+
+.PHONY: run-jupyter
+run-jupyter:
+	@uvx --with .[examples] \
+		--env-file .env \
+		jupyter lab \
+		--notebook-dir=examples \
+		--ip=127.0.0.1 \
+		--port=8888 \
+		--no-browser
+
+.PHONY: run-pre-commit-install
+run-pre-commit-install:
+	@uvx pre-commit install

@@ -252,7 +252,7 @@ class Faithfulness:
         answer: str
     ) -> ClaimExtractorOutput:
 
-        system = [{"text": self._claim_extractor_instruction}]
+        system = [{"text": self.claim_extractor_instruction}]
         examples = []
         for ex in self.claim_extractor_examples:
             examples += [
@@ -289,7 +289,7 @@ class Faithfulness:
     ) -> FaithfulnessJudgeOutput:
 
         system = [{"text": self.faithfulness_judge_instruction}]
-        examples: List[ChatMessage] = []
+        examples = []
         for ex in self.faithfulness_judge_examples:
             examples += [
                 ChatMessage(
