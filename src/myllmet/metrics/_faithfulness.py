@@ -115,16 +115,68 @@ class Faithfulness:
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
 
-        self._claim_extractor_instruction = claim_extractor_instruction \
-            or self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
-        self._faithfulness_judge_instruction = faithfulness_judge_instruction \
-            or self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
-        self._claim_extractor_examples = claim_extractor_examples \
-            or self.DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
-        self._faithfulness_judge_examples = faithfulness_judge_examples \
-            or self.DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES
+        self._claim_extractor_instruction = claim_extractor_instruction
+        self._faithfulness_judge_instruction = faithfulness_judge_instruction
+        self._claim_extractor_examples = claim_extractor_examples
+        self._faithfulness_judge_examples = faithfulness_judge_examples
 
         self._tracker = NoOPTracker()
+
+    @property
+    def claim_extractor_instruction(self) -> str:
+        if self._claim_extractor_instruction is None:
+            logger.debug(
+                f"Using default claim extractor instruction in `{self.__class__.__name__}` metrics"
+                " as no custom instruction is provided."
+            )
+            output = self.DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
+
+        else:
+            output = self._claim_extractor_instruction
+
+        return output
+
+    @property
+    def faithfulness_judge_instruction(self) -> str:
+        if self._faithfulness_judge_instruction is None:
+            logger.debug(
+                f"Using default faithfulness judge instruction in `{self.__class__.__name__}` metrics"
+                " as no custom instruction is provided."
+            )
+            output = self.DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION
+
+        else:
+            output = self._faithfulness_judge_instruction
+
+        return output
+
+    @property
+    def claim_extractor_examples(self) -> List:
+        if self._claim_extractor_examples is None:
+            logger.debug(
+                f"Using default claim extractor examples in `{self.__class__.__name__}` metrics"
+                " as no custom examples are provided."
+            )
+            output = self.DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
+
+        else:
+            output = self._claim_extractor_examples
+
+        return output
+
+    @property
+    def faithfulness_judge_examples(self) -> List:
+        if self._faithfulness_judge_examples is None:
+            logger.debug(
+                f"Using default faithfulness judge examples in `{self.__class__.__name__}` metrics"
+                " as no custom examples are provided."
+            )
+            output = self.DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES
+
+        else:
+            output = self._faithfulness_judge_examples
+
+        return output
 
     def _extract_claims(
         self,
@@ -134,7 +186,7 @@ class Faithfulness:
 
         system = [{"text": self._claim_extractor_instruction}]
         examples = []
-        for ex in self._claim_extractor_examples:
+        for ex in self.claim_extractor_examples:
             examples += [
                 {
                     "role": "user",
@@ -170,7 +222,7 @@ class Faithfulness:
 
         system = [{"text": self._faithfulness_judge_instruction}]
         examples = []
-        for ex in self._faithfulness_judge_examples:
+        for ex in self.faithfulness_judge_examples:
             examples += [
                 {
                     "role": "user",
@@ -215,10 +267,10 @@ class Faithfulness:
                 "ground_truth": "",  # Not used in Faithfulness score calculation
                 "score": score,
                 "prompts": {
-                    "claim_extractor_instruction": self._claim_extractor_instruction,
-                    "_claim_extractor_examples": self._claim_extractor_examples,
-                    "faithfulness_judge_instruction": self._faithfulness_judge_instruction,
-                    "_faithfulness_judge_examples": self._faithfulness_judge_examples
+                    "claim_extractor_instruction": self.claim_extractor_instruction,
+                    "claim_extractor_examples": self.claim_extractor_examples,
+                    "faithfulness_judge_instruction": self.faithfulness_judge_instruction,
+                    "faithfulness_judge_examples": self.faithfulness_judge_examples
                 },
                 "intermediates": {
                     "claims": claims,
