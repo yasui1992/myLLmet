@@ -206,7 +206,10 @@ class Faithfulness:
         if self._activate_fewshot_examples:
             chat_history = self._convert_to_chat_history(self.claim_extractor_examples)
         else:
-            logger.debug(f"Few-shot examples of claim extractor are deactivated in `{self.__class__.__name__}` metrics.")
+            logger.debug(
+                "Few-shot examples of claim extractor are deactivated"
+                f"in `{self.__class__.__name__}` metrics."
+            )
             chat_history = []
 
         input_text = json.dumps(
@@ -235,7 +238,10 @@ class Faithfulness:
         if self._activate_fewshot_examples:
             chat_history = self._convert_to_chat_history(self.faithfulness_judge_examples)
         else:
-            logger.debug(f"Few-shot examples of faithfulness judge are deactivated in `{self.__class__.__name__}` metrics.")
+            logger.debug(
+                "Few-shot examples of faithfulness judge are deactivated "
+                f"in `{self.__class__.__name__}` metrics."
+            )
             chat_history = []
 
         input_text = json.dumps(
