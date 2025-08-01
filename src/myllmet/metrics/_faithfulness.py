@@ -4,7 +4,7 @@
 # No source code from RAGAS has been copied or included.
 
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 import logging
 import json
 from pydantic import BaseModel, Field
@@ -180,6 +180,22 @@ class Faithfulness:
 
         return output
 
+    def _convert_to_chat_history(self, examples: List) -> List[Dict]:
+        chat_history = []
+        for ex in examples:
+            chat_history += [
+                {
+                    "role": "user",
+                    "content": json.dumps(ex["user"], ensure_ascii=False)
+                },
+                {
+                    "role": "assistant",
+                    "content": json.dumps(ex["assistant"], ensure_ascii=False)
+                }
+            ]
+
+        return chat_history
+
     def _extract_claims(
         self,
         question: str,
@@ -187,21 +203,11 @@ class Faithfulness:
     ) -> ClaimExtractorResult:
 
         system = [{"text": self.claim_extractor_instruction}]
-        examples = []
         if self._activate_fewshot_examples:
-            for ex in self.claim_extractor_examples:
-                examples += [
-                    {
-                        "role": "user",
-                        "content": json.dumps(ex["user"], ensure_ascii=False)
-                    },
-                    {
-                        "role": "assistant",
-                        "content": json.dumps(ex["assistant"], ensure_ascii=False)
-                    }
-                ]
+            chat_history = self._convert_to_chat_history(self.claim_extractor_examples)
         else:
             logger.debug(f"Few-shot examples of claim extractor are deactivated in `{self.__class__.__name__}` metrics.")
+            chat_history = []
 
         input_text = json.dumps(
             {
@@ -213,7 +219,7 @@ class Faithfulness:
 
         result = self.claim_extractor_client.chat(
             input_text,
-            chat_history=examples,
+            chat_history=chat_history,
             converse_kwargs={"system": system}
         )
 
@@ -226,21 +232,11 @@ class Faithfulness:
     ) -> FaithfulnessJudgeResult:
 
         system = [{"text": self.faithfulness_judge_instruction}]
-        examples = []
         if self._activate_fewshot_examples:
-            for ex in self.faithfulness_judge_examples:
-                examples += [
-                    {
-                        "role": "user",
-                        "content": json.dumps(ex["user"], ensure_ascii=False)
-                },
-                {
-                    "role": "assistant",
-                    "content": json.dumps(ex["assistant"], ensure_ascii=False)
-                }
-            ]
+            chat_history = self._convert_to_chat_history(self.faithfulness_judge_examples)
         else:
             logger.debug(f"Few-shot examples of faithfulness judge are deactivated in `{self.__class__.__name__}` metrics.")
+            chat_history = []
 
         input_text = json.dumps(
             {
@@ -252,7 +248,7 @@ class Faithfulness:
 
         result = self.faithfulness_judge_client.chat(
             input_text,
-            chat_history=examples,
+            chat_history=chat_history,
             converse_kwargs={"system": system}
         )
 
