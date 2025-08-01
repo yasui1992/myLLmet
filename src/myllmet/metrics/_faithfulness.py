@@ -107,6 +107,7 @@ class Faithfulness:
         claim_extractor_client: BedrockClient,
         faithfulness_judge_client: BedrockClient,
         *,
+        activate_fewshot_examples: bool = False,
         claim_extractor_instruction: Optional[str] = None,
         claim_extractor_examples: Optional[List] = None,
         faithfulness_judge_instruction: Optional[str] = None,
@@ -115,6 +116,7 @@ class Faithfulness:
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
 
+        self._activate_fewshot_examples = activate_fewshot_examples
         self._claim_extractor_instruction = claim_extractor_instruction
         self._claim_extractor_examples = claim_extractor_examples
         self._faithfulness_judge_instruction = faithfulness_judge_instruction
@@ -186,17 +188,20 @@ class Faithfulness:
 
         system = [{"text": self.claim_extractor_instruction}]
         examples = []
-        for ex in self.claim_extractor_examples:
-            examples += [
-                {
-                    "role": "user",
-                    "content": json.dumps(ex["user"], ensure_ascii=False)
-                },
-                {
-                    "role": "assistant",
-                    "content": json.dumps(ex["assistant"], ensure_ascii=False)
-                }
-            ]
+        if self._activate_fewshot_examples:
+            for ex in self.claim_extractor_examples:
+                examples += [
+                    {
+                        "role": "user",
+                        "content": json.dumps(ex["user"], ensure_ascii=False)
+                    },
+                    {
+                        "role": "assistant",
+                        "content": json.dumps(ex["assistant"], ensure_ascii=False)
+                    }
+                ]
+        else:
+            logger.debug(f"Few-shot examples of claim extractor are deactivated in `{self.__class__.__name__}` metrics.")
 
         input_text = json.dumps(
             {
@@ -222,17 +227,20 @@ class Faithfulness:
 
         system = [{"text": self.faithfulness_judge_instruction}]
         examples = []
-        for ex in self.faithfulness_judge_examples:
-            examples += [
-                {
-                    "role": "user",
-                    "content": json.dumps(ex["user"], ensure_ascii=False)
+        if self._activate_fewshot_examples:
+            for ex in self.faithfulness_judge_examples:
+                examples += [
+                    {
+                        "role": "user",
+                        "content": json.dumps(ex["user"], ensure_ascii=False)
                 },
                 {
                     "role": "assistant",
                     "content": json.dumps(ex["assistant"], ensure_ascii=False)
                 }
             ]
+        else:
+            logger.debug(f"Few-shot examples of faithfulness judge are deactivated in `{self.__class__.__name__}` metrics.")
 
         input_text = json.dumps(
             {
