@@ -108,16 +108,16 @@ class Faithfulness:
         faithfulness_judge_client: BedrockClient,
         *,
         claim_extractor_instruction: Optional[str] = None,
-        faithfulness_judge_instruction: Optional[str] = None,
         claim_extractor_examples: Optional[List] = None,
+        faithfulness_judge_instruction: Optional[str] = None,
         faithfulness_judge_examples: Optional[List] = None
     ):
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
 
         self._claim_extractor_instruction = claim_extractor_instruction
-        self._faithfulness_judge_instruction = faithfulness_judge_instruction
         self._claim_extractor_examples = claim_extractor_examples
+        self._faithfulness_judge_instruction = faithfulness_judge_instruction
         self._faithfulness_judge_examples = faithfulness_judge_examples
 
         self._tracker = NoOPTracker()
