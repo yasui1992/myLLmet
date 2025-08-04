@@ -45,6 +45,20 @@ myllmet = { git = "https://github.com/yasui1992/myllmet.git", branch = "main" }
 
 For installation, please follow the instructions for your package manager (e.g., run `uv sync` or `poetry install`).
 
+## Usage
+
+This project uses Bedrock Converse API. To configure the environment, create a .env file in your project root with the following credentials, for example:
+
+```
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_DEFAULT_REGION=...
+```
+
+Replace the placeholder values with your actual AWS credentials.
+
+**Note**: Make sure your AWS credentials correspond to an IAM role or user with the necessary permissions to access Bedrock Converse API.
+
 ## License
 
 This project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).  
