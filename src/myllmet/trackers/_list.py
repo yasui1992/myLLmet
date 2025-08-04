@@ -25,15 +25,19 @@ class ListTracker(BaseTracker):
             "ground_truth": record.get("ground_truth", ""),
             "score": record["score"]
         })
-        if record.get("prompts"):
+
+        prompts = record.get("prompts")
+        if prompts is not None:
             self._prompt_records.append({
                 "id": id_,
-                **record["prompts"]
+                **prompts
             })
-        if record.get("intermediates"):
+
+        intermediates = record.get("intermediates")
+        if intermediates is not None:
             self._intermediate_records.append({
                 "id": id_,
-                **record["intermediates"]
+                **intermediates
             })
 
     def to_pandas(self, kind: Literal["standard", "prompts", "intermediates"]) -> "pd.DataFrame":

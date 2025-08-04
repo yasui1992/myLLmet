@@ -31,3 +31,11 @@ run-ruff-fix:
 		ruff check \
 		src tests \
 		--fix
+
+.PHONY: run-mypy
+run-mypy:
+	@uv run \
+		--dev \
+		--all-extras \
+		mypy \
+		src

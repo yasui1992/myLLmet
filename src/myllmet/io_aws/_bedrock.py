@@ -1,4 +1,4 @@
-from typing import Optional, TypedDict
+from typing import Optional, TypedDict, List
 import logging
 import json
 import time
@@ -13,9 +13,12 @@ from .exceptions import BedrockClientError
 logger = logging.getLogger(__name__)
 
 
-class ChatHistory(TypedDict):
+class ChatMessage(TypedDict):
     role: str
     content: str
+
+
+ChatHistory = List[ChatMessage]
 
 
 class BedrockClient:
