@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from myllmet.io_aws import BedrockClient
 from myllmet.trackers import BaseTracker, NoOPTracker
+from myllmet.schemas import ChatMessage
 
 
 logger = logging.getLogger(__name__)
@@ -120,7 +121,7 @@ class Faithfulness:
         self._claim_extractor_examples = claim_extractor_examples
         self._faithfulness_judge_examples = faithfulness_judge_examples
 
-        self._tracker = NoOPTracker()
+        self._tracker: BaseTracker = NoOPTracker()
 
     @property
     def claim_extractor_instruction(self) -> str:
@@ -188,14 +189,14 @@ class Faithfulness:
         examples = []
         for ex in self.claim_extractor_examples:
             examples += [
-                {
-                    "role": "user",
-                    "content": json.dumps(ex["user"], ensure_ascii=False)
-                },
-                {
-                    "role": "assistant",
-                    "content": json.dumps(ex["assistant"], ensure_ascii=False)
-                }
+                ChatMessage(
+                    role="user",
+                    content=json.dumps(ex["user"], ensure_ascii=False)
+                ),
+                ChatMessage(
+                    role="assistant",
+                    content=json.dumps(ex["assistant"], ensure_ascii=False)
+                )
             ]
 
         input_text = json.dumps(
@@ -221,17 +222,17 @@ class Faithfulness:
     ) -> FaithfulnessJudgeResult:
 
         system = [{"text": self._faithfulness_judge_instruction}]
-        examples = []
+        examples: List[ChatMessage] = []
         for ex in self.faithfulness_judge_examples:
             examples += [
-                {
-                    "role": "user",
-                    "content": json.dumps(ex["user"], ensure_ascii=False)
-                },
-                {
-                    "role": "assistant",
-                    "content": json.dumps(ex["assistant"], ensure_ascii=False)
-                }
+                ChatMessage(
+                    role="user",
+                    content=json.dumps(ex["user"], ensure_ascii=False)
+                ),
+                ChatMessage(
+                    role="assistant",
+                    content=json.dumps(ex["assistant"], ensure_ascii=False)
+                )
             ]
 
         input_text = json.dumps(
