@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import json
 
 from myllmet.metrics import Faithfulness
-from myllmet.metrics._faithfulness import SingleFaithfulnessJudgResult, ClaimExtractorResult, FaithfulnessJudgeResult
+from myllmet.metrics._faithfulness import SingleFaithfulnessJudgResult, ClaimExtractorOutput, FaithfulnessJudgeOutput
 
 
 @pytest.fixture
@@ -74,8 +74,8 @@ def test_call_tracker_log():
     met = Faithfulness(claim_extractor_client=MagicMock(), faithfulness_judge_client=MagicMock())
     met.set_tracker(mock_tracker)
 
-    met._extract_claims = lambda q, a: ClaimExtractorResult(claims=["c1", "c2"])
-    met._judge_faithfulness = lambda ctx, claims: FaithfulnessJudgeResult(verdicts=[
+    met._extract_claims = lambda q, a: ClaimExtractorOutput(claims=["c1", "c2"])
+    met._judge_faithfulness = lambda ctx, claims: FaithfulnessJudgeOutput(verdicts=[
         SingleFaithfulnessJudgResult(claim="c1", verdict=1, reason="r1"),
         SingleFaithfulnessJudgResult(claim="c2", verdict=0, reason="r2"),
     ])

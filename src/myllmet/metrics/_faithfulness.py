@@ -4,7 +4,8 @@
 # No source code from RAGAS has been copied or included.
 
 
-from typing import List, Optional
+from typing import cast
+from typing import Any, Dict, List, Optional
 import logging
 import json
 from pydantic import BaseModel, Field
@@ -92,12 +93,32 @@ class SingleFaithfulnessJudgResult(BaseModel):
     reason: str = Field(..., description="判定の理由")
 
 
-class ClaimExtractorResult(BaseModel):
+class ClaimExtractorInput(BaseModel):
+    question: str = Field(..., description="質問")
+    answer: str = Field(..., description="回答")
+
+
+class ClaimExtractorOutput(BaseModel):
     claims: List[str] = Field(..., description="抽出された主張のリスト")
 
 
-class FaithfulnessJudgeResult(BaseModel):
+class ClaimExtractorExample(BaseModel):
+    user: ClaimExtractorInput
+    assistant: ClaimExtractorOutput
+
+
+class FaithfulnessJudgeInput(BaseModel):
+    context: str = Field(..., description="コンテキスト")
+    claims: List[str] = Field(..., description="主張")
+
+
+class FaithfulnessJudgeOutput(BaseModel):
     verdicts: List[SingleFaithfulnessJudgResult]
+
+
+class FaithfulnessJudgeExample(BaseModel):
+    user: FaithfulnessJudgeInput
+    assistant: FaithfulnessJudgeOutput
 
 
 class Faithfulness:
@@ -105,14 +126,16 @@ class Faithfulness:
         self,
         claim_extractor_client: BedrockClient,
         faithfulness_judge_client: BedrockClient,
+        enable_fewshot: bool = False,
         *,
         claim_extractor_instruction: Optional[str] = None,
         faithfulness_judge_instruction: Optional[str] = None,
-        claim_extractor_examples: Optional[List] = None,
-        faithfulness_judge_examples: Optional[List] = None
+        claim_extractor_examples: Optional[List[Dict[str, Any]]] = None,
+        faithfulness_judge_examples: Optional[List[Dict[str, Any]]] = None
     ):
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
+        self.enable_fewshot_examples = enable_fewshot
 
         self._claim_extractor_instruction = claim_extractor_instruction
         self._faithfulness_judge_instruction = faithfulness_judge_instruction
@@ -137,7 +160,7 @@ class Faithfulness:
             f"{instruct}"
             "\n"
             "次のスキーマに準拠した形式で、出力をJSON文字列として返してください。\n"
-            f"{json.dumps(ClaimExtractorResult.model_json_schema(), ensure_ascii=False)}\n"
+            f"{json.dumps(ClaimExtractorOutput.model_json_schema(), ensure_ascii=False)}\n"
         )
 
         return output
@@ -158,36 +181,69 @@ class Faithfulness:
             f"{instruct}"
             "\n"
             "次のスキーマに準拠した形式で、出力をJSON文字列として返してください。\n"
-            f"{json.dumps(FaithfulnessJudgeResult.model_json_schema(), ensure_ascii=False)}\n"
+            f"{json.dumps(FaithfulnessJudgeOutput.model_json_schema(), ensure_ascii=False)}\n"
         )
 
         return output
 
     @property
-    def claim_extractor_examples(self) -> List:
-        if self._claim_extractor_examples is None:
+    def claim_extractor_examples(self) -> List[ClaimExtractorExample]:
+        if not self.enable_fewshot_examples:
+            logger.debug(
+                f"Few-shot examples are disabled in `{self.__class__.__name__}` metrics. "
+            )
+            examples = []
+        elif self._claim_extractor_examples is None:
             logger.debug(
                 f"Using default claim extractor examples in `{self.__class__.__name__}` metrics"
                 " as no custom examples are provided."
             )
-            output = DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
-
+            examples = DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
         else:
-            output = self._claim_extractor_examples
+            examples = self._claim_extractor_examples
+
+        output = []
+        for ex in examples:
+            user_dict = cast(dict[str, Any], ex["user"])
+            assistant_dict = cast(dict[str, Any], ex["assistant"])
+
+            output.append(
+                ClaimExtractorExample(
+                    user=ClaimExtractorInput(**user_dict),
+                    assistant=ClaimExtractorOutput(**assistant_dict)
+                )
+            )
 
         return output
 
     @property
-    def faithfulness_judge_examples(self) -> List:
-        if self._faithfulness_judge_examples is None:
+    def faithfulness_judge_examples(self) -> List[FaithfulnessJudgeExample]:
+        if not self.enable_fewshot_examples:
+            logger.debug(
+                f"Few-shot examples are disabled in `{self.__class__.__name__}` metrics. "
+            )
+            examples = []
+        elif self._faithfulness_judge_examples is None:
             logger.debug(
                 f"Using default faithfulness judge examples in `{self.__class__.__name__}` metrics"
                 " as no custom examples are provided."
             )
-            output = DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES
+            examples = DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES
 
         else:
-            output = self._faithfulness_judge_examples
+            examples = self._faithfulness_judge_examples
+
+        output = []
+        for ex in examples:
+            user_dict = cast(dict[str, Any], ex["user"])
+            assistant_dict = cast(dict[str, Any], ex["assistant"])
+
+            output.append(
+                FaithfulnessJudgeExample(
+                    user=FaithfulnessJudgeInput(**user_dict),
+                    assistant=FaithfulnessJudgeOutput(**assistant_dict)
+                )
+            )
 
         return output
 
@@ -195,7 +251,7 @@ class Faithfulness:
         self,
         question: str,
         answer: str
-    ) -> ClaimExtractorResult:
+    ) -> ClaimExtractorOutput:
 
         system = [{"text": self._claim_extractor_instruction}]
         examples = []
@@ -203,11 +259,11 @@ class Faithfulness:
             examples += [
                 ChatMessage(
                     role="user",
-                    content=json.dumps(ex["user"], ensure_ascii=False)
+                    content=json.dumps(ex.user, ensure_ascii=False)
                 ),
                 ChatMessage(
                     role="assistant",
-                    content=json.dumps(ex["assistant"], ensure_ascii=False)
+                    content=json.dumps(ex.assistant, ensure_ascii=False)
                 )
             ]
 
@@ -225,13 +281,13 @@ class Faithfulness:
             converse_kwargs={"system": system}
         )
 
-        return ClaimExtractorResult.model_validate_json(result)
+        return ClaimExtractorOutput.model_validate_json(result)
 
     def _judge_faithfulness(
         self,
         context: str,
         claims: List[str]
-    ) -> FaithfulnessJudgeResult:
+    ) -> FaithfulnessJudgeOutput:
 
         system = [{"text": self._faithfulness_judge_instruction}]
         examples: List[ChatMessage] = []
@@ -239,11 +295,11 @@ class Faithfulness:
             examples += [
                 ChatMessage(
                     role="user",
-                    content=json.dumps(ex["user"], ensure_ascii=False)
+                    content=json.dumps(ex.user, ensure_ascii=False)
                 ),
                 ChatMessage(
                     role="assistant",
-                    content=json.dumps(ex["assistant"], ensure_ascii=False)
+                    content=json.dumps(ex.assistant, ensure_ascii=False)
                 )
             ]
 
@@ -261,7 +317,7 @@ class Faithfulness:
             converse_kwargs={"system": system}
         )
 
-        return FaithfulnessJudgeResult.model_validate_json(result)
+        return FaithfulnessJudgeOutput.model_validate_json(result)
 
     def _log_to_tracker(
         self,
