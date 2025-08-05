@@ -60,7 +60,10 @@ class BedrockClient:
     def _call_converse_api(self, messages, converse_kwargs=None):
         logger.debug(f"Calling converse API with model ID: {self.model_id}")
 
-        request = {"messages": messages} | (converse_kwargs or {})
+        # TODO: Resolve temperature hardcoded value
+        request = {"messages": messages} \
+            | {"inferenceConfig": {"temperature": 0.0}} \
+            | (converse_kwargs or {})
         logger.debug(f"Sending request: {json.dumps(request, ensure_ascii=False)}")
 
         response = self._client.converse(
