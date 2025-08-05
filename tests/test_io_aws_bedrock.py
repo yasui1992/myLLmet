@@ -1,8 +1,9 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from myllmet.io_aws import BedrockClient
 from myllmet.io_aws.exceptions import BedrockClientError
-
 
 _SUPPORTED_RESPONSE = {
     "stopReason": "end_turn",

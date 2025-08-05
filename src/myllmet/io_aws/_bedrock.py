@@ -1,14 +1,13 @@
-from typing import Optional, TypedDict, List
-import logging
 import json
+import logging
 import time
+from typing import List, Optional, TypedDict
 
 import boto3
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
 from .exceptions import BedrockClientError
-
 
 logger = logging.getLogger(__name__)
 

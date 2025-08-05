@@ -1,9 +1,10 @@
-import pytest
-from unittest.mock import MagicMock
 import json
+from unittest.mock import MagicMock
+
+import pytest
 
 from myllmet.metrics import Faithfulness
-from myllmet.metrics._faithfulness import SingleFaithfulnessJudgResult, ClaimExtractorOutput, FaithfulnessJudgeOutput
+from myllmet.metrics._faithfulness import ClaimExtractorOutput, FaithfulnessJudgeOutput, SingleFaithfulnessJudgResult
 
 
 @pytest.fixture

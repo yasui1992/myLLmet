@@ -1,9 +1,7 @@
+from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
-from typing import TYPE_CHECKING
-from typing import Literal
 
 from .base import BaseTracker, LLMMetricsRecord
-
 
 if TYPE_CHECKING:
     import pandas as pd  # type: ignore[import]

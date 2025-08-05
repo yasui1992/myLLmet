@@ -27,7 +27,6 @@ run-ruff:
 .PHONY: run-ruff-fix
 run-ruff-fix:
 	@uvx --with . \
-		--optional pandas \
 		ruff check \
 		src tests \
 		--fix
