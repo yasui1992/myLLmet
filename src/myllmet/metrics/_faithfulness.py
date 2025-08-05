@@ -4,16 +4,15 @@
 # No source code from RAGAS has been copied or included.
 
 
-from typing import cast
-from typing import Any, Dict, List, Optional
-import logging
 import json
+import logging
+from typing import Any, Dict, List, Optional, cast
+
 from pydantic import BaseModel, Field
 
 from myllmet.io_aws import BedrockClient
-from myllmet.trackers import BaseTracker, NoOPTracker
 from myllmet.schemas import ChatMessage
-
+from myllmet.trackers import BaseTracker, NoOPTracker
 
 logger = logging.getLogger(__name__)
 

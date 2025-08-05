@@ -25,7 +25,13 @@ exclude = [".venv"]
 line-length = 120
 indent-width = 4
 
-lint.select = ["E", "W", "F", "Q"]
+lint.select = [
+    "E",
+    "W",
+    "F",
+    "Q",
+    "I"
+]
 
 [tool.ruff.format]
 quote-style = "double"
