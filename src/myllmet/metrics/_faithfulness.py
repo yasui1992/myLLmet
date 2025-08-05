@@ -289,7 +289,7 @@ class Faithfulness:
         claims: List[str]
     ) -> FaithfulnessJudgeOutput:
 
-        system = [{"text": self._faithfulness_judge_instruction}]
+        system = [{"text": self.faithfulness_judge_instruction}]
         examples: List[ChatMessage] = []
         for ex in self.faithfulness_judge_examples:
             examples += [
