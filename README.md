@@ -4,6 +4,61 @@ A personal LLM evaluation project — the name stands for **my LLM metrics**.
 Inspired by tools like [Ragas](https://github.com/explodinggradients/ragas), but reimplemented from scratch to better understand how LLM evaluation works.  
 The LLM used in this project is provided by AWS Bedrock.
 
+## Installation
+
+1. To install a package from GitHub
+
+```sh
+pip install git+https://github.com/yasui1992/myllmet.git@main
+```
+
+2. To install from a local copy after cloning the repository:
+
+```sh
+git clone https://github.com/yasui1992/myllmet.git
+cd myllmet
+pip install .
+```
+
+3. To specify the dependency in pyproject.toml:
+
+When using uv:
+
+```toml
+[project]
+name = "example"
+version = "0.1.0"
+dependencies = [
+    "myllmet",
+]
+
+[tool.uv.sources]
+myllmet = { git = "https://github.com/yasui1992/myllmet.git", branch = "main" }
+```
+
+When using Poetry:
+
+```toml
+[tool.poetry.dependencies]
+myllmet = { git = "https://github.com/yasui1992/myllmet.git", branch = "main" }
+```
+
+For installation, please follow the instructions for your package manager (e.g., run `uv sync` or `poetry install`).
+
+## Usage
+
+This project uses Bedrock Converse API. To configure the environment, create a .env file in your project root with the following credentials, for example:
+
+```
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_DEFAULT_REGION=...
+```
+
+Replace the placeholder values with your actual AWS credentials.
+
+**Note**: Make sure your AWS credentials correspond to an IAM role or user with the necessary permissions to access Bedrock Converse API.
+
 ## License
 
 This project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).  
