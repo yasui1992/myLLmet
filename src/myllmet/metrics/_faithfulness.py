@@ -11,18 +11,11 @@ from typing import Any, Dict, List, Optional, cast
 from pydantic import BaseModel, Field
 
 from myllmet.io_aws import BedrockClient
+from myllmet.metrics.components import ClaimExtractor
 from myllmet.schemas import ChatMessage
 from myllmet.trackers import BaseTracker, NoOPTracker
 
 logger = logging.getLogger(__name__)
-
-
-DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION = (
-    "あなたは日本語の言語分析のAIアシスタントです。\n"
-    "あなたのタスクは、与えられた質問と回答の組に対して、回答を1つ以上の主張に分解することです。\n"
-    "主張には代名詞を一切使用しないでください。\n"
-    "各主張は完全に自己完結しており、それ単体で理解可能でなければなりません。前の文脈に依存してはいけません。\n"
-)
 
 
 DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION = (
@@ -30,27 +23,6 @@ DEFAULT_FAITHFULNESS_JUDGE_INSTRUCTION = (
     "あなたのタスクは、与えられたコンテキストに基づいて、個々の主張の忠実性を判断することです。\n"
     "各主張について、文脈から直接推論できる場合は「1」、直接推論できない場合は「0」を返してください。\n"
 )
-
-
-DEFAULT_CLAIM_EXTRACTOR_EXAMPLES = [
-    {
-        "user": {
-            "question": "アルベルト・アインシュタインについて教えてください。",
-            "answer": (
-                "彼はドイツ生まれの理論物理学者であり、史上最も偉大で影響力のある物理学者の一人として広く認められています。"
-                "彼は相対性理論の提唱で最もよく知られており、また量子力学の理論発展にも重要な貢献をしました。"
-            )
-        },
-        "assistant": {
-            "claims": [
-                "アルベルト・アインシュタインは、ドイツ生まれの理論物理学者です。",
-                "アルベルト・アインシュタインは、史上最も偉大で影響力のある物理学者の一人として認められています。",
-                "アルベルト・アインシュタインは、相対性理論の提唱で最もよく知られています。",
-                "アルベルト・アインシュタインは、量子力学の理論発展に重要な貢献をしました。"
-            ]
-        }
-    }
-]
 
 
 DEFAULT_FAITHFULNESS_JUDGE_EXAMPLES = [
@@ -92,20 +64,6 @@ class SingleFaithfulnessJudgResult(BaseModel):
     reason: str = Field(..., description="判定の理由")
 
 
-class ClaimExtractorInput(BaseModel):
-    question: str = Field(..., description="質問")
-    answer: str = Field(..., description="回答")
-
-
-class ClaimExtractorOutput(BaseModel):
-    claims: List[str] = Field(..., description="抽出された主張のリスト")
-
-
-class ClaimExtractorExample(BaseModel):
-    user: ClaimExtractorInput
-    assistant: ClaimExtractorOutput
-
-
 class FaithfulnessJudgeInput(BaseModel):
     context: str = Field(..., description="コンテキスト")
     claims: List[str] = Field(..., description="主張")
@@ -127,42 +85,23 @@ class Faithfulness:
         faithfulness_judge_client: BedrockClient,
         enable_fewshot: bool = False,
         *,
-        claim_extractor_instruction: Optional[str] = None,
+        claim_extractor: Optional[ClaimExtractor] = None,
         faithfulness_judge_instruction: Optional[str] = None,
-        claim_extractor_examples: Optional[List[Dict[str, Any]]] = None,
         faithfulness_judge_examples: Optional[List[Dict[str, Any]]] = None
     ):
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
         self.enable_fewshot_examples = enable_fewshot
 
-        self._claim_extractor_instruction = claim_extractor_instruction
+        self._claim_extractor = claim_extractor or ClaimExtractor(
+            client=claim_extractor_client,
+            enable_fewshot_examples=enable_fewshot
+        )
         self._faithfulness_judge_instruction = faithfulness_judge_instruction
-        self._claim_extractor_examples = claim_extractor_examples
         self._faithfulness_judge_examples = faithfulness_judge_examples
 
         self._tracker: BaseTracker = NoOPTracker()
 
-    @property
-    def claim_extractor_instruction(self) -> str:
-        if self._claim_extractor_instruction is None:
-            logger.debug(
-                f"Using default claim extractor instruction in `{self.__class__.__name__}` metrics"
-                " as no custom instruction is provided."
-            )
-            instruct = DEFAULT_CLAIM_EXTRACTOR_INSTRUCTION
-
-        else:
-            instruct = self._claim_extractor_instruction
-
-        output = (
-            f"{instruct}"
-            "\n"
-            "次のスキーマに準拠した形式で、出力をJSON文字列として返してください。\n"
-            f"{json.dumps(ClaimExtractorOutput.model_json_schema(), ensure_ascii=False)}\n"
-        )
-
-        return output
 
     @property
     def faithfulness_judge_instruction(self) -> str:
@@ -182,36 +121,6 @@ class Faithfulness:
             "次のスキーマに準拠した形式で、出力をJSON文字列として返してください。\n"
             f"{json.dumps(FaithfulnessJudgeOutput.model_json_schema(), ensure_ascii=False)}\n"
         )
-
-        return output
-
-    @property
-    def claim_extractor_examples(self) -> List[ClaimExtractorExample]:
-        if not self.enable_fewshot_examples:
-            logger.debug(
-                f"Few-shot examples are disabled in `{self.__class__.__name__}` metrics. "
-            )
-            examples = []
-        elif self._claim_extractor_examples is None:
-            logger.debug(
-                f"Using default claim extractor examples in `{self.__class__.__name__}` metrics"
-                " as no custom examples are provided."
-            )
-            examples = DEFAULT_CLAIM_EXTRACTOR_EXAMPLES
-        else:
-            examples = self._claim_extractor_examples
-
-        output = []
-        for ex in examples:
-            user_dict = cast(dict[str, Any], ex["user"])
-            assistant_dict = cast(dict[str, Any], ex["assistant"])
-
-            output.append(
-                ClaimExtractorExample(
-                    user=ClaimExtractorInput(**user_dict),
-                    assistant=ClaimExtractorOutput(**assistant_dict)
-                )
-            )
 
         return output
 
@@ -245,42 +154,6 @@ class Faithfulness:
             )
 
         return output
-
-    def _extract_claims(
-        self,
-        question: str,
-        answer: str
-    ) -> ClaimExtractorOutput:
-
-        system = [{"text": self._claim_extractor_instruction}]
-        examples = []
-        for ex in self.claim_extractor_examples:
-            examples += [
-                ChatMessage(
-                    role="user",
-                    content=json.dumps(ex.user, ensure_ascii=False)
-                ),
-                ChatMessage(
-                    role="assistant",
-                    content=json.dumps(ex.assistant, ensure_ascii=False)
-                )
-            ]
-
-        input_text = json.dumps(
-            {
-                "question": question,
-                "answer": answer
-            },
-            ensure_ascii=False
-        )
-
-        result = self.claim_extractor_client.chat(
-            input_text,
-            chat_history=examples,
-            converse_kwargs={"system": system}
-        )
-
-        return ClaimExtractorOutput.model_validate_json(result)
 
     def _judge_faithfulness(
         self,
@@ -335,8 +208,8 @@ class Faithfulness:
                 "ground_truth": "",  # Not used in Faithfulness score calculation
                 "score": score,
                 "prompts": {
-                    "claim_extractor_instruction": self.claim_extractor_instruction,
-                    "claim_extractor_examples": self.claim_extractor_examples,
+                    "claim_extractor_instruction": self._claim_extractor.instruction,
+                    "claim_extractor_examples": self._claim_extractor.fewshot_examples,
                     "faithfulness_judge_instruction": self.faithfulness_judge_instruction,
                     "faithfulness_judge_examples": self.faithfulness_judge_examples
                 },
@@ -369,7 +242,12 @@ class Faithfulness:
                 "It will be ignored."
             )
 
-        claims = self._extract_claims(question, answer).claims
+        claim_extract_result = self._claim_extractor.invoke(
+            question=question,
+            answer=answer
+        )
+        claims = claim_extract_result["claims"]
+
         verdicts = self._judge_faithfulness(context, claims).verdicts
         verdicts_as_int = [v.verdict for v in verdicts]
 
