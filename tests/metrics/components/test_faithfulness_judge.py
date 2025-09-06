@@ -10,27 +10,27 @@ from myllmet.metrics.components.faithfulness_judge import (
 )
 
 
-def test_invoke_valid(client_stub_factory):
+def test_invoke_valid(llm_client_stub_factory):
     return_value: OutputSchema = {
         "verdicts": [
             {"claim": "c1", "verdict": 1, "reason": "r1"},
             {"claim": "c2", "verdict": 0, "reason": "r2"},
         ]
     }
-    client = client_stub_factory(return_value=return_value)
+    client = llm_client_stub_factory(return_value=return_value)
     judge = FaithfulnessJudge(client=client)
 
     actual = judge.invoke("context text", ["c1", "c2"])
     assert actual == return_value
 
 
-def test_invoke_args_passed_correctly(client_stub_factory):
+def test_invoke_args_passed_correctly(llm_client_stub_factory):
     return_value: OutputSchema = {
         "verdicts": [
             {"claim": "c1", "verdict": 1, "reason": "r1"}
         ]
     }
-    client = client_stub_factory(return_value=return_value)
+    client = llm_client_stub_factory(return_value=return_value)
     judge = FaithfulnessJudge(client=client)
 
     context = "sample context"
@@ -45,13 +45,13 @@ def test_invoke_args_passed_correctly(client_stub_factory):
     assert params["fewshot_examples"] == DEFAULT_FEWSHOT_EXAMPLES
 
 
-def test_invoke_with_custom_instruction_and_fewshot(client_stub_factory):
+def test_invoke_with_custom_instruction_and_fewshot(llm_client_stub_factory):
     return_value: OutputSchema = {
         "verdicts": [
             {"claim": "c1", "verdict": 1, "reason": "r1"}
         ]
     }
-    client = client_stub_factory(return_value=return_value)
+    client = llm_client_stub_factory(return_value=return_value)
 
     custom_instruction = "Custom instruction"
     custom_fewshot = [
@@ -74,9 +74,9 @@ def test_invoke_with_custom_instruction_and_fewshot(client_stub_factory):
     assert params["fewshot_examples"] == custom_fewshot
 
 
-def test_invoke_invalid_schema(client_stub_factory):
+def test_invoke_invalid_schema(llm_client_stub_factory):
     bad_output = {"verdicts": "not-a-list"}
-    client = client_stub_factory(return_value=bad_output)
+    client = llm_client_stub_factory(return_value=bad_output)
     judge = FaithfulnessJudge(client=client)
 
     with pytest.raises(jsonschema.ValidationError):

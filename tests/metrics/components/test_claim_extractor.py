@@ -10,9 +10,9 @@ from myllmet.metrics.components.claim_extractor import (
 )
 
 
-def test_invoke_valid(client_stub_factory):
+def test_invoke_valid(llm_client_stub_factory):
     return_value: OutputSchema = {"claims": ["c1", "c2", "c3"]}
-    client = client_stub_factory(
+    client = llm_client_stub_factory(
         return_value=return_value
     )
     extractor = ClaimExtractor(client=client)
@@ -23,9 +23,9 @@ def test_invoke_valid(client_stub_factory):
     assert actual == expected
 
 
-def test_invoke_args_passed_correctly(client_stub_factory):
+def test_invoke_args_passed_correctly(llm_client_stub_factory):
     return_value: OutputSchema = {"claims": ["c1", "c2", "c3"]}
-    client = client_stub_factory(
+    client = llm_client_stub_factory(
         return_value=return_value
     )
     extractor = ClaimExtractor(client=client)
@@ -47,9 +47,9 @@ def test_invoke_args_passed_correctly(client_stub_factory):
     assert params["fewshot_examples"] == expected_fewshot_examples
 
 
-def test_invoke_with_custom_instruction_and_fewshot_examples(client_stub_factory):
+def test_invoke_with_custom_instruction_and_fewshot_examples(llm_client_stub_factory):
     return_value: OutputSchema = {"claims": ["custom1", "custom2"]}
-    client = client_stub_factory(return_value=return_value)
+    client = llm_client_stub_factory(return_value=return_value)
 
     custom_instruction = "Custom instruction"
     custom_fewshot_examples = [
@@ -73,9 +73,9 @@ def test_invoke_with_custom_instruction_and_fewshot_examples(client_stub_factory
     assert params["fewshot_examples"] == expected_fewshot_examples
 
 
-def test_invoke_invalid_schema(client_stub_factory):
+def test_invoke_invalid_schema(llm_client_stub_factory):
     bad_output = {"claims": "not-a-list"}
-    client = client_stub_factory(return_value=bad_output)
+    client = llm_client_stub_factory(return_value=bad_output)
     extractor = ClaimExtractor(client=client)
 
     with pytest.raises(jsonschema.ValidationError):

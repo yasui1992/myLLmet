@@ -4,7 +4,7 @@ from myllmet.metrics.interface import LLMClientInterface
 
 
 @pytest.fixture
-def client_stub_factory():
+def llm_client_stub_factory():
     class DummyLLMClient(LLMClientInterface):
         def __init__(self, return_value):
             self._return_value = return_value
