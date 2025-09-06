@@ -78,13 +78,11 @@ class ClaimExtractor:
     def __init__(
         self,
         client: BedrockClient,
-        enable_fewshot_examples: bool = False,
         *,
         instruction: Optional[str] = None,
         fewshot_examples: Optional[List[FewShotExample]] = None
     ):
         self.client = client
-        self.enable_fewshot_examples = enable_fewshot_examples
 
         self._instruction = instruction
         self._fewshot_examples = fewshot_examples
@@ -112,12 +110,7 @@ class ClaimExtractor:
 
     @property
     def fewshot_examples(self) -> List[FewShotExample]:
-        if not self.enable_fewshot_examples:
-            logger.debug(
-                f"Few-shot examples are disabled in `{self.__class__.__name__}` metrics. "
-            )
-            examples = []
-        elif self._fewshot_examples is None:
+        if self._fewshot_examples is None:
             logger.debug(
                 f"Using default few-shot examples in `{self.__class__.__name__}` metrics"
                 " as no custom examples are provided."

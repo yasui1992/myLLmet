@@ -14,22 +14,18 @@ class Faithfulness:
         self,
         claim_extractor_client: BedrockClient,
         faithfulness_judge_client: BedrockClient,
-        enable_fewshot: bool = False,
         *,
         claim_extractor: Optional[ClaimExtractor] = None,
         faithfulness_judge: Optional[FaithfulnessJudge] = None
     ):
         self.claim_extractor_client = claim_extractor_client
         self.faithfulness_judge_client = faithfulness_judge_client
-        self.enable_fewshot_examples = enable_fewshot
 
         self._claim_extractor = claim_extractor or ClaimExtractor(
-            client=claim_extractor_client,
-            enable_fewshot_examples=enable_fewshot
+            client=claim_extractor_client
         )
         self._faithfulness_judge = faithfulness_judge or FaithfulnessJudge(
-            client=faithfulness_judge_client,
-            enable_fewshot_examples=enable_fewshot
+            client=faithfulness_judge_client
         )
 
         self._tracker: BaseTracker = NoOPTracker()
