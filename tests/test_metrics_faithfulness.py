@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 import pytest
 
 from myllmet.metrics import Faithfulness
-from myllmet.metrics._faithfulness import FaithfulnessJudgeOutput, SingleFaithfulnessJudgResult
 
 
 @pytest.fixture
@@ -15,8 +14,8 @@ def mock_clients():
     mock_claim_extractor.chat.return_value = json.dumps({"claims": ["c1", "c2"]})
     mock_faithfulness_judge.chat.return_value = json.dumps({
         "verdicts": [
-            {"claim": "c1", "verdict": "1", "reason": "r1"},
-            {"claim": "c2", "verdict": "0", "reason": "r2"}
+            {"claim": "c1", "verdict": 1, "reason": "r1"},
+            {"claim": "c2", "verdict": 0, "reason": "r2"}
         ]
     })
 
@@ -56,7 +55,12 @@ def test_missing_context_failed(mock_clients):
 def test_mismatched_claims_and_verdicts_failed(mock_clients):
     claim_client, judge_client = mock_clients
     claim_client.chat.return_value = json.dumps({"claims": ["c1", "c2", "c3"]})
-    judge_client.chat.return_value = json.dumps({"verdicts": [1, 0]})
+    judge_client.chat.return_value = json.dumps({
+        "verdicts": [
+            {"claim": "c1", "verdict": 1, "reason": "r1"},
+            {"claim": "c2", "verdict": 0, "reason": "r2"}
+        ]
+    })
 
     faithfulness = Faithfulness(
         claim_extractor_client=claim_client,
@@ -77,10 +81,12 @@ def test_call_tracker_log():
 
     met._claim_extractor = MagicMock()
     met._claim_extractor.invoke = lambda question, answer: {"claims": ["c1", "c2"]}
-    met._judge_faithfulness = lambda ctx, claims: FaithfulnessJudgeOutput(verdicts=[
-        SingleFaithfulnessJudgResult(claim="c1", verdict=1, reason="r1"),
-        SingleFaithfulnessJudgResult(claim="c2", verdict=0, reason="r2"),
-    ])
+    met._faithfulness_judge.invoke = lambda context, claims: {
+        "verdicts": [
+            {"claim": "c1", "verdict": 1, "reason": "r1"},
+            {"claim": "c2", "verdict": 0, "reason": "r2"},
+        ]
+    }
 
     met.score("q", "a", "ctx")
 
