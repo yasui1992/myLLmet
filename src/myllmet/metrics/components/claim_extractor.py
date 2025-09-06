@@ -76,7 +76,7 @@ DEFAULT_FEWSHOT_EXAMPLES: List[FewShotExample] = [
 class ClaimExtractor:
     def __init__(
         self,
-        client: LLMClientInterface,
+        client: LLMClientInterface[InputSchema, OutputSchema],
         *,
         instruction: Optional[str] = None,
         fewshot_examples: Optional[List[FewShotExample]] = None
@@ -125,18 +125,16 @@ class ClaimExtractor:
         question: str,
         answer: str
     ) -> OutputSchema:
-        input_text = json.dumps(
-            {
-                "question": question,
-                "answer": answer
-            },
-            ensure_ascii=False
-        )
+
+        input_json: InputSchema = {
+            "question": question,
+            "answer": answer
+        }
 
         result = self.client.invoke(
             instruction=self.instruction,
             fewshot_examples=self.fewshot_examples,
-            input_text=input_text,
+            input_json=input_json,
             output_json_schema=OUTPUT_JSON_SCHEMA
         )
 

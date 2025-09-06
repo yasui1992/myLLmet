@@ -1,20 +1,20 @@
 import json
 import logging
 import time
-from typing import List, Optional
+from typing import Generic, List, Optional
 
 import boto3
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
-from myllmet.metrics.interface import JSONSchema, JSONType, LLMClientInterface
+from myllmet.metrics.interface import IS, OS, JSONSchema, LLMClientInterface
 
 from .exceptions import BedrockClientError
 
 logger = logging.getLogger(__name__)
 
 
-class BedrockClient(LLMClientInterface):
+class BedrockClient(LLMClientInterface, Generic[IS, OS]):
     def __init__(
         self,
         model_id: str,
@@ -71,7 +71,7 @@ class BedrockClient(LLMClientInterface):
     def _build_messages(
         self,
         fewshot_examples: List,
-        input_text: str,
+        input_json: IS,
     ) -> List:
 
         messages = []
@@ -93,7 +93,7 @@ class BedrockClient(LLMClientInterface):
         messages.append({
             "role": "user",
             "content": [
-                {"text": input_text}
+                {"text": json.dumps(input_json, ensure_ascii=False)}
             ]
         })
 
@@ -120,12 +120,12 @@ class BedrockClient(LLMClientInterface):
         self,
         instruction: str,
         fewshot_examples: List,
-        input_text: str,
+        input_json: IS,
         output_json_schema: JSONSchema,
-    ) -> JSONType:
+    ) -> OS:
 
         system = [{"text": self._build_system_prompt(instruction, output_json_schema)}]
-        messages = self._build_messages(fewshot_examples, input_text)
+        messages = self._build_messages(fewshot_examples, input_json)
 
         for attempt in range(1, self.max_attempts + 1):
             try:

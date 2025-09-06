@@ -7,8 +7,10 @@ from .components import ClaimExtractor, FaithfulnessJudge
 from .interface import LLMClientInterface
 
 if TYPE_CHECKING:
-    from myllmet.metrics.components.claim_extractor import OutputSchema as ClaimExtractorOutputSchema
-    from myllmet.metrics.components.faithfulness_judge import OutputSchema as FaithfulnessJudgeOutputSchema
+    from myllmet.metrics.components.claim_extractor import InputSchema as ClaimExtractorIS
+    from myllmet.metrics.components.claim_extractor import OutputSchema as ClaimExtractorOS
+    from myllmet.metrics.components.faithfulness_judge import InputSchema as FaithfulnessJudgeIS
+    from myllmet.metrics.components.faithfulness_judge import OutputSchema as FaithfulnessJudgeOS
 
 
 logger = logging.getLogger(__name__)
@@ -29,8 +31,8 @@ class Faithfulness:
     @classmethod
     def from_clients(
         cls,
-        claim_extractor_client: LLMClientInterface,
-        faithfulness_judge_client: Optional[LLMClientInterface] = None,
+        claim_extractor_client: LLMClientInterface["ClaimExtractorIS", "ClaimExtractorOS"],
+        faithfulness_judge_client: LLMClientInterface["FaithfulnessJudgeIS", "FaithfulnessJudgeOS"],
         kwargs_claim_extractor: Optional[Dict] = None,
         kwargs_faithfulness_judge: Optional[Dict] = None,
     ) -> "Faithfulness":
@@ -40,7 +42,7 @@ class Faithfulness:
             **(kwargs_claim_extractor or {})
         )
         faithfulness_judge = FaithfulnessJudge(
-            client=faithfulness_judge_client or claim_extractor_client,
+            client=faithfulness_judge_client,
             **(kwargs_faithfulness_judge or {})
         )
 
@@ -99,8 +101,8 @@ class Faithfulness:
         answer: str,
         context: str,
         score: float,
-        claim_extractor_output: "ClaimExtractorOutputSchema",
-        faithfulness_judge_output: "FaithfulnessJudgeOutputSchema",
+        claim_extractor_output: "ClaimExtractorOS",
+        faithfulness_judge_output: "FaithfulnessJudgeOS",
     ) -> None:
         self._tracker.log(
             {

@@ -1,21 +1,17 @@
-from typing import Any, Dict, List, Protocol, TypedDict, runtime_checkable
+from typing import Any, Dict, Generic, Protocol, TypeVar, runtime_checkable
 
-type JSONType = Dict[str, Any]
 type JSONSchema = Dict[str, Any]
 
-
-class FewShotExample(TypedDict):
-    user: JSONSchema
-    assistant: JSONSchema
+IS = TypeVar("IS", contravariant=True)  # Assume a TypedDict-derived type
+OS = TypeVar("OS", covariant=True)  # Assume a TypedDict-derived type
 
 
 @runtime_checkable
-class LLMClientInterface(Protocol):
+class LLMClientInterface(Protocol, Generic[IS, OS]):
     def invoke(
         self,
         instruction: str,
-        fewshot_examples: List[FewShotExample],
-        input_text: str,
+        fewshot_examples,
+        input_json: IS,
         output_json_schema: JSONSchema,
-    ) -> JSONType:
-        ...
+    ) -> OS: ...

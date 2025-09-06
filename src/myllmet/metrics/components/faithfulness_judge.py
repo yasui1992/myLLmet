@@ -109,7 +109,7 @@ DEFAULT_FEWSHOT_EXAMPLES: List[FewShotExample] = [
 class FaithfulnessJudge:
     def __init__(
         self,
-        client: LLMClientInterface,
+        client: LLMClientInterface[InputSchema, OutputSchema],
         *,
         instruction: Optional[str] = None,
         fewshot_examples: Optional[List[FewShotExample]] = None
@@ -159,18 +159,15 @@ class FaithfulnessJudge:
         claims: List[str]
     ) -> OutputSchema:
 
-        input_text = json.dumps(
-            {
-                "context": context,
-                "claims": claims
-            },
-            ensure_ascii=False
-        )
+        input_json: InputSchema = {
+            "context": context,
+            "claims": claims
+        }
 
         result = self.client.invoke(
             instruction=self.instruction,
             fewshot_examples=self.fewshot_examples,
-            input_text=input_text,
+            input_json=input_json,
             output_json_schema=OUTPUT_JSON_SCHEMA
         )
 
