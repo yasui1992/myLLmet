@@ -10,7 +10,7 @@ from typing import List, Optional, TypedDict
 
 import jsonschema
 
-from ..interface import LLMClientInterface
+from myllmet.metrics.interface import LLMClientInterface
 
 logger = logging.getLogger(__name__)
 

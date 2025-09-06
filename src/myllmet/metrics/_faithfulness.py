@@ -2,9 +2,8 @@ import logging
 from typing import TYPE_CHECKING, Dict, Optional
 
 from myllmet.trackers import BaseTracker, NoOPTracker
-
-from .components import ClaimExtractor, FaithfulnessJudge
-from .interface import LLMClientInterface
+from myllmet.metrics.components import ClaimExtractor, FaithfulnessJudge
+from myllmet.metrics.interface import LLMClientInterface
 
 if TYPE_CHECKING:
     from myllmet.metrics.components.claim_extractor import InputSchema as ClaimExtractorIS
