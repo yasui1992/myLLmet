@@ -1,10 +1,15 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from myllmet.io_aws import BedrockClient
 from myllmet.trackers import BaseTracker, NoOPTracker
 
 from .components import ClaimExtractor, FaithfulnessJudge
+
+if TYPE_CHECKING:
+    from myllmet.metrics.components.claim_extractor import OutputSchema as ClaimExtractorOutputSchema
+    from myllmet.metrics.components.faithfulness_judge import OutputSchema as FaithfulnessJudgeOutputSchema
+
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +41,8 @@ class Faithfulness:
         answer: str,
         context: str,
         score: float,
-        claims: List[str],
-        verdicts: List[Dict[str, Any]],
+        claim_extractor_output: "ClaimExtractorOutputSchema",
+        faithfulness_judge_output: "FaithfulnessJudgeOutputSchema",
     ) -> None:
         self._tracker.log(
             {
@@ -53,8 +58,8 @@ class Faithfulness:
                     "faithfulness_judge_examples": self._faithfulness_judge.fewshot_examples,
                 },
                 "intermediates": {
-                    "claims": claims,
-                    "verdicts": verdicts,
+                    "claims": claim_extractor_output["claims"],
+                    "verdicts": faithfulness_judge_output["verdicts"],
                 }
             }
         )
@@ -81,11 +86,11 @@ class Faithfulness:
                 "It will be ignored."
             )
 
-        claim_extract_result = self._claim_extractor.invoke(question,answer)
-        claims = claim_extract_result["claims"]
+        claim_extractor_output = self._claim_extractor.invoke(question,answer)
+        claims = claim_extractor_output["claims"]
 
-        faithfulness_judge_result = self._faithfulness_judge.invoke(context, claims)
-        verdicts = [v["verdict"] for v in faithfulness_judge_result["verdicts"]]
+        faithfulness_judge_output = self._faithfulness_judge.invoke(context, claims)
+        verdicts = [v["verdict"] for v in faithfulness_judge_output["verdicts"]]
 
         if len(claims) != len(verdicts):
             raise ValueError(
@@ -100,8 +105,8 @@ class Faithfulness:
             answer=answer,
             context=context,
             score=score,
-            claims=claims,
-            verdicts=verdicts
+            claim_extractor_output=claim_extractor_output,
+            faithfulness_judge_output=faithfulness_judge_output
         )
 
         return score
