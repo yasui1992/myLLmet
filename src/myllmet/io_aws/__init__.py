@@ -1,5 +1,5 @@
-from ._bedrock import BedrockClient
+from ._bedrock import BedrockChatClient
 
 __all__ = [
-    "BedrockClient",
+    "BedrockChatClient",
 ]

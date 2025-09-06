@@ -1,6 +1,6 @@
-from .base import BaseTracker, LLMMetricsRecord
+from myllmet.metrics.interface import LLMMetricsRecord, TrackerInterface
 
 
-class NoOPTracker(BaseTracker):
+class NoOPTracker(TrackerInterface):
     def log(self, record: LLMMetricsRecord) -> None:
         pass

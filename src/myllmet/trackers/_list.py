@@ -1,13 +1,13 @@
 from typing import TYPE_CHECKING, Literal
 from uuid import uuid4
 
-from .base import BaseTracker, LLMMetricsRecord
+from myllmet.metrics.interface import LLMMetricsRecord, TrackerInterface
 
 if TYPE_CHECKING:
     import pandas as pd  # type: ignore[import]
 
 
-class ListTracker(BaseTracker):
+class ListTracker(TrackerInterface):
     def __init__(self):
         self._standard_records = []
         self._prompt_records = []

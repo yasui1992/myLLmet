@@ -10,8 +10,7 @@ from typing import List, Optional, TypedDict
 
 import jsonschema
 
-from myllmet.io_aws import BedrockClient
-from myllmet.schemas import ChatMessage
+from myllmet.metrics.interface import LLMClientInterface
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +76,7 @@ DEFAULT_FEWSHOT_EXAMPLES: List[FewShotExample] = [
 class ClaimExtractor:
     def __init__(
         self,
-        client: BedrockClient,
+        client: LLMClientInterface[InputSchema, OutputSchema],
         *,
         instruction: Optional[str] = None,
         fewshot_examples: Optional[List[FewShotExample]] = None
@@ -127,34 +126,17 @@ class ClaimExtractor:
         answer: str
     ) -> OutputSchema:
 
-        system = [{"text": self.instruction}]
-        examples = []
-        for ex in self.fewshot_examples:
-            examples += [
-                ChatMessage(
-                    role="user",
-                    content=json.dumps(ex["user"], ensure_ascii=False)
-                ),
-                ChatMessage(
-                    role="assistant",
-                    content=json.dumps(ex["assistant"], ensure_ascii=False)
-                )
-            ]
+        input_json: InputSchema = {
+            "question": question,
+            "answer": answer
+        }
 
-        input_text = json.dumps(
-            {
-                "question": question,
-                "answer": answer
-            },
-            ensure_ascii=False
+        result = self.client.invoke(
+            instruction=self.instruction,
+            fewshot_examples=self.fewshot_examples,
+            input_json=input_json,
+            output_json_schema=OUTPUT_JSON_SCHEMA
         )
-
-        llm_result = self.client.chat(
-            input_text,
-            chat_history=examples,
-            converse_kwargs={"system": system}
-        )
-        result = json.loads(llm_result)
 
         jsonschema.validate(instance=result, schema=OUTPUT_JSON_SCHEMA)
         return result
