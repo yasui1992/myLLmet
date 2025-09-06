@@ -14,7 +14,7 @@ from .exceptions import BedrockClientError
 logger = logging.getLogger(__name__)
 
 
-class BedrockClient(LLMClientInterface, Generic[IS, OS]):
+class BedrockChatClient(LLMClientInterface, Generic[IS, OS]):
     def __init__(
         self,
         model_id: str,
