@@ -7,7 +7,6 @@ import boto3
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
-from myllmet.io_aws.exceptions import BedrockClientError
 from myllmet.metrics.interface import IS, OS, JSONSchema, LLMClientInterface
 
 logger = logging.getLogger(__name__)
@@ -30,23 +29,17 @@ class BedrockChatClient(LLMClientInterface, Generic[IS, OS]):
         stop_reason = response["stopReason"]
 
         if stop_reason != "end_turn":
-            raise BedrockClientError(
-                f"Supported only `end_turn` stop reason. Got: {stop_reason}"
-            )
+            raise ValueError(f"Expected stopReason to be `end_turn`. Got: {stop_reason}")
 
         message = response["output"]["message"]
         role = message["role"]
         contents = message["content"]
 
         if role != "assistant":
-            raise BedrockClientError(
-                f"Supported only `assistant` role. Got: {role}"
-            )
+            raise ValueError(f"Expected role to be `assistant`. Got: {role}")
 
         if len(contents) > 1:
-            raise BedrockClientError(
-                f"Supported only single content. Got: {len(contents)}"
-            )
+            raise ValueError(f"Expected single content. Got: {len(contents)} contents.")
 
         return contents[0]["text"]
 
@@ -135,7 +128,7 @@ class BedrockChatClient(LLMClientInterface, Generic[IS, OS]):
                 if error_code == "ThrottlingException":
                     logger.debug(f"ThrottlingException occurred: {e}.")
                 else:
-                    logger.debug(f"Unsupported ClientError occurred: {e}.")
+                    raise
 
                 if attempt < self.max_attempts:
                     wait_time = min(2 ** attempt, self.max_wait)
