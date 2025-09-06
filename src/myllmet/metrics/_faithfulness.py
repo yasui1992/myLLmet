@@ -103,6 +103,22 @@ class Faithfulness:
         claim_extractor_output: "ClaimExtractorOS",
         faithfulness_judge_output: "FaithfulnessJudgeOS",
     ) -> None:
+
+        intermediates = {
+            "claims": claim_extractor_output["claims"],
+            "verdicts": faithfulness_judge_output["verdicts"],
+        }
+        prompts = {
+            "claim_extractor": {
+                "instruction": self._claim_extractor.instruction,
+                "fewshot_examples": self._claim_extractor.fewshot_examples
+            },
+            "faithfulness_judge": {
+                "instruction": self._faithfulness_judge.instruction,
+                "fewshot_examples": self._faithfulness_judge.fewshot_examples
+            }
+        }
+
         self._tracker.log(
             {
                 "question": question,
@@ -110,15 +126,7 @@ class Faithfulness:
                 "context": context,
                 "ground_truth": "",  # Not used in Faithfulness score calculation
                 "score": score,
-                "prompts": {
-                    "claim_extractor_instruction": self._claim_extractor.instruction,
-                    "claim_extractor_examples": self._claim_extractor.fewshot_examples,
-                    "faithfulness_judge_instruction": self._faithfulness_judge.instruction,
-                    "faithfulness_judge_examples": self._faithfulness_judge.fewshot_examples,
-                },
-                "intermediates": {
-                    "claims": claim_extractor_output["claims"],
-                    "verdicts": faithfulness_judge_output["verdicts"],
-                }
+                "prompts": prompts,
+                "intermediates": intermediates,
             }
         )
