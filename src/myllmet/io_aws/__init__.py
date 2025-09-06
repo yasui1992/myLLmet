@@ -1,4 +1,4 @@
-from ._bedrock import BedrockChatClient
+from ._bedrock_chat import BedrockChatClient
 
 __all__ = [
     "BedrockChatClient",
