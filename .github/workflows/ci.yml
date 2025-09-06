@@ -19,7 +19,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
       - name: Run Ruff
-        run: make run-ruff
+        run: make ruff
 
   mypy:
     name: Type Check
@@ -32,7 +32,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
       - name: Run Mypy
-        run: make run-mypy
+        run: make mypy
 
   test:
     name: Test
@@ -45,4 +45,4 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
       - name: Run Tests
-        run: make run-pytest-ci
+        run: make pytest-ci
