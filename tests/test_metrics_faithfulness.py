@@ -23,11 +23,8 @@ def mock_clients():
 
 
 def test_score_returns_success(mock_clients):
-    claim_client, judge_client = mock_clients
-    faithfulness = Faithfulness(
-        claim_extractor_client=claim_client,
-        faithfulness_judge_client=judge_client
-    )
+    ce_client, fj_client = mock_clients
+    faithfulness = Faithfulness.from_clients(ce_client, fj_client)
 
     score = faithfulness.score(
         question="q",
@@ -39,11 +36,8 @@ def test_score_returns_success(mock_clients):
 
 
 def test_missing_context_failed(mock_clients):
-    claim_client, judge_client = mock_clients
-    faithfulness = Faithfulness(
-        claim_extractor_client=claim_client,
-        faithfulness_judge_client=judge_client
-    )
+    ce_client, fj_client = mock_clients
+    faithfulness = Faithfulness.from_clients(ce_client, fj_client)
 
     with pytest.raises(ValueError):
         faithfulness.score(
@@ -53,19 +47,16 @@ def test_missing_context_failed(mock_clients):
 
 
 def test_mismatched_claims_and_verdicts_failed(mock_clients):
-    claim_client, judge_client = mock_clients
-    claim_client.chat.return_value = json.dumps({"claims": ["c1", "c2", "c3"]})
-    judge_client.chat.return_value = json.dumps({
+    ce_client, fj_client = mock_clients
+    ce_client.chat.return_value = json.dumps({"claims": ["c1", "c2", "c3"]})
+    fj_client.chat.return_value = json.dumps({
         "verdicts": [
             {"claim": "c1", "verdict": 1, "reason": "r1"},
             {"claim": "c2", "verdict": 0, "reason": "r2"}
         ]
     })
 
-    faithfulness = Faithfulness(
-        claim_extractor_client=claim_client,
-        faithfulness_judge_client=judge_client
-    )
+    faithfulness = Faithfulness.from_clients(ce_client, fj_client)
 
     with pytest.raises(ValueError):
         faithfulness.score(
@@ -74,9 +65,10 @@ def test_mismatched_claims_and_verdicts_failed(mock_clients):
             context="rc1\nrc2"
         )
 
-def test_call_tracker_log():
+def test_call_tracker_log(mock_clients):
+    ce_client, fj_client = mock_clients
     mock_tracker = MagicMock()
-    met = Faithfulness(claim_extractor_client=MagicMock(), faithfulness_judge_client=MagicMock())
+    met = Faithfulness.from_clients(ce_client, fj_client)
     met.set_tracker(mock_tracker)
 
     met._claim_extractor = MagicMock()

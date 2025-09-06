@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 from myllmet.io_aws import BedrockClient
 from myllmet.trackers import BaseTracker, NoOPTracker
@@ -17,55 +17,37 @@ logger = logging.getLogger(__name__)
 class Faithfulness:
     def __init__(
         self,
-        claim_extractor_client: BedrockClient,
-        faithfulness_judge_client: BedrockClient,
-        *,
-        claim_extractor: Optional[ClaimExtractor] = None,
-        faithfulness_judge: Optional[FaithfulnessJudge] = None
+        claim_extractor: ClaimExtractor,
+        faithfulness_judge: FaithfulnessJudge
     ):
-        self.claim_extractor_client = claim_extractor_client
-        self.faithfulness_judge_client = faithfulness_judge_client
 
-        self._claim_extractor = claim_extractor or ClaimExtractor(
-            client=claim_extractor_client
-        )
-        self._faithfulness_judge = faithfulness_judge or FaithfulnessJudge(
-            client=faithfulness_judge_client
-        )
+        self._claim_extractor = claim_extractor
+        self._faithfulness_judge = faithfulness_judge
 
         self._tracker: BaseTracker = NoOPTracker()
 
-    def _log_to_tracker(
-        self,
-        question: str,
-        answer: str,
-        context: str,
-        score: float,
-        claim_extractor_output: "ClaimExtractorOutputSchema",
-        faithfulness_judge_output: "FaithfulnessJudgeOutputSchema",
-    ) -> None:
-        self._tracker.log(
-            {
-                "question": question,
-                "answer": answer,
-                "context": context,
-                "ground_truth": "",  # Not used in Faithfulness score calculation
-                "score": score,
-                "prompts": {
-                    "claim_extractor_instruction": self._claim_extractor.instruction,
-                    "claim_extractor_examples": self._claim_extractor.fewshot_examples,
-                    "faithfulness_judge_instruction": self._faithfulness_judge.instruction,
-                    "faithfulness_judge_examples": self._faithfulness_judge.fewshot_examples,
-                },
-                "intermediates": {
-                    "claims": claim_extractor_output["claims"],
-                    "verdicts": faithfulness_judge_output["verdicts"],
-                }
-            }
+    @classmethod
+    def from_clients(
+        cls,
+        claim_extractor_client: BedrockClient,
+        faithfulness_judge_client: Optional[BedrockClient] = None,
+        kwargs_claim_extractor: Optional[Dict] = None,
+        kwargs_faithfulness_judge: Optional[Dict] = None,
+    ) -> "Faithfulness":
+
+        claim_extractor = ClaimExtractor(
+            client=claim_extractor_client,
+            **(kwargs_claim_extractor or {})
+        )
+        faithfulness_judge = FaithfulnessJudge(
+            client=faithfulness_judge_client or claim_extractor_client,
+            **(kwargs_faithfulness_judge or {})
         )
 
-    def set_tracker(self, tracker: BaseTracker) -> None:
-        self._tracker = tracker
+        return cls(
+            claim_extractor=claim_extractor,
+            faithfulness_judge=faithfulness_judge
+        )
 
     def score(
         self,
@@ -110,3 +92,35 @@ class Faithfulness:
         )
 
         return score
+
+    def _log_to_tracker(
+        self,
+        question: str,
+        answer: str,
+        context: str,
+        score: float,
+        claim_extractor_output: "ClaimExtractorOutputSchema",
+        faithfulness_judge_output: "FaithfulnessJudgeOutputSchema",
+    ) -> None:
+        self._tracker.log(
+            {
+                "question": question,
+                "answer": answer,
+                "context": context,
+                "ground_truth": "",  # Not used in Faithfulness score calculation
+                "score": score,
+                "prompts": {
+                    "claim_extractor_instruction": self._claim_extractor.instruction,
+                    "claim_extractor_examples": self._claim_extractor.fewshot_examples,
+                    "faithfulness_judge_instruction": self._faithfulness_judge.instruction,
+                    "faithfulness_judge_examples": self._faithfulness_judge.fewshot_examples,
+                },
+                "intermediates": {
+                    "claims": claim_extractor_output["claims"],
+                    "verdicts": faithfulness_judge_output["verdicts"],
+                }
+            }
+        )
+
+    def set_tracker(self, tracker: BaseTracker) -> None:
+        self._tracker = tracker
