@@ -21,7 +21,7 @@ class LLMClientInterface(Protocol, Generic[IS, OS]):
     def invoke(
         self,
         instruction: str,
-        fewshot_examples,
+        fewshot_examples,  # List of TypedDict with "user" (resp. "assistant") which is mapped to IS (resp. OS)
         input_json: IS,
         output_json_schema: JSONSchema,
     ) -> OS: ...
