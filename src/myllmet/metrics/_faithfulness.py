@@ -49,6 +49,9 @@ class Faithfulness:
             faithfulness_judge=faithfulness_judge
         )
 
+    def set_tracker(self, tracker: BaseTracker) -> None:
+        self._tracker = tracker
+
     def score(
         self,
         question: str,
@@ -58,13 +61,10 @@ class Faithfulness:
     ) -> float:
 
         if context is None:
-            raise ValueError(
-                "`context` must be provided "
-                "in Faithfulness score calculation."
-            )
+            raise ValueError(f"`context` must be provided in {self.__class__.__name__} score calculation.")
         if ground_truth is not None:
             logger.warning(
-                "`ground_truth` is not used in Faithfulness score calculation. "
+                f"`ground_truth` is not used in {self.__class__.__name__} score calculation. "
                 "It will be ignored."
             )
 
@@ -121,6 +121,3 @@ class Faithfulness:
                 }
             }
         )
-
-    def set_tracker(self, tracker: BaseTracker) -> None:
-        self._tracker = tracker
