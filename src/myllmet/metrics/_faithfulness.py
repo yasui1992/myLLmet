@@ -1,9 +1,3 @@
-# This module includes prompt designs adapted and translated
-# from the RAGAS project (https://github.com/explodinggradients/ragas).
-# RAGAS is licensed under the Apache License 2.0.
-# No source code from RAGAS has been copied or included.
-
-
 import logging
 from typing import Any, Dict, List, Optional
 
