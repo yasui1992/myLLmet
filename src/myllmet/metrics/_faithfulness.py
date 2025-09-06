@@ -1,10 +1,10 @@
 import logging
 from typing import TYPE_CHECKING, Dict, Optional
 
-from myllmet.io_aws import BedrockClient
 from myllmet.trackers import BaseTracker, NoOPTracker
 
 from .components import ClaimExtractor, FaithfulnessJudge
+from .interface import LLMClientInterface
 
 if TYPE_CHECKING:
     from myllmet.metrics.components.claim_extractor import OutputSchema as ClaimExtractorOutputSchema
@@ -29,8 +29,8 @@ class Faithfulness:
     @classmethod
     def from_clients(
         cls,
-        claim_extractor_client: BedrockClient,
-        faithfulness_judge_client: Optional[BedrockClient] = None,
+        claim_extractor_client: LLMClientInterface,
+        faithfulness_judge_client: Optional[LLMClientInterface] = None,
         kwargs_claim_extractor: Optional[Dict] = None,
         kwargs_faithfulness_judge: Optional[Dict] = None,
     ) -> "Faithfulness":
