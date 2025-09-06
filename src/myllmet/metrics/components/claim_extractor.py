@@ -90,22 +90,15 @@ class ClaimExtractor:
     def instruction(self) -> str:
         if self._instruction is None:
             logger.debug(
-                f"Using default claim extractor instruction in `{self.__class__.__name__}` metrics"
+                f"Using default instruction in `{self.__class__.__name__}` metrics"
                 " as no custom instruction is provided."
             )
-            instruct = DEFAULT_INSTRUCTION
+            instruction = DEFAULT_INSTRUCTION
 
         else:
-            instruct = self._instruction
+            instruction = self._instruction
 
-        output = (
-            f"{instruct}"
-            "\n"
-            "次のスキーマに準拠した形式で、出力をJSON文字列として返してください。\n"
-            f"{json.dumps(OUTPUT_JSON_SCHEMA, ensure_ascii=False)}\n"
-        )
-
-        return output
+        return instruction
 
     @property
     def fewshot_examples(self) -> List[FewShotExample]:
