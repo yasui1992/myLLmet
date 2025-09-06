@@ -44,19 +44,20 @@ OUTPUT_JSON_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                "claim": {
-                    "type": "string",
-                    "description": "与えられた主張"
-                },
-                "verdict": {
-                    "type": "integer",
-                    "enum": [0, 1],
-                    "description": "忠実性の判定結果(0/1)"
-                },
-                "reason": {
-                    "type": "string",
-                    "description": "判定の理由"
-                }
+                    "claim": {
+                        "type": "string",
+                        "description": "与えられた主張"
+                    },
+                    "verdict": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "忠実性の判定結果 (0=False, 1=True)"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "判定の理由"
+                    }
                 },
                 "required": ["claim", "verdict", "reason"],
             }
