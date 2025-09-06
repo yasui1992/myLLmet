@@ -1,9 +1,9 @@
 import logging
 from typing import TYPE_CHECKING, Dict, Optional
 
-from myllmet.trackers import BaseTracker, NoOPTracker
 from myllmet.metrics.components import ClaimExtractor, FaithfulnessJudge
-from myllmet.metrics.interface import LLMClientInterface
+from myllmet.metrics.interface import LLMClientInterface, TrackerInterface
+from myllmet.trackers import NoOPTracker
 
 if TYPE_CHECKING:
     from myllmet.metrics.components.claim_extractor import InputSchema as ClaimExtractorIS
@@ -25,7 +25,7 @@ class Faithfulness:
         self._claim_extractor = claim_extractor
         self._faithfulness_judge = faithfulness_judge
 
-        self._tracker: BaseTracker = NoOPTracker()
+        self._tracker: TrackerInterface = NoOPTracker()
 
     @classmethod
     def from_clients(
@@ -50,7 +50,7 @@ class Faithfulness:
             faithfulness_judge=faithfulness_judge
         )
 
-    def set_tracker(self, tracker: BaseTracker) -> None:
+    def set_tracker(self, tracker: TrackerInterface) -> None:
         self._tracker = tracker
 
     def score(

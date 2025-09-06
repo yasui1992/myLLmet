@@ -7,8 +7,8 @@ import boto3
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
-from myllmet.metrics.interface import IS, OS, JSONSchema, LLMClientInterface
 from myllmet.io_aws.exceptions import BedrockClientError
+from myllmet.metrics.interface import IS, OS, JSONSchema, LLMClientInterface
 
 logger = logging.getLogger(__name__)
 
