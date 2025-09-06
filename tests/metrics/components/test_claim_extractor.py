@@ -1,29 +1,13 @@
-import pytest
 import jsonschema
+import pytest
 
 from myllmet.metrics.components import ClaimExtractor
-from myllmet.metrics.components.claim_extractor import InputSchema, OutputSchema
-from myllmet.metrics.components.claim_extractor import DEFAULT_INSTRUCTION, DEFAULT_FEWSHOT_EXAMPLES, OUTPUT_JSON_SCHEMA
-from myllmet.metrics.interface import LLMClientInterface
-
-
-@pytest.fixture
-def client_stub_factory():
-    class DummyLLMClient(LLMClientInterface[InputSchema, OutputSchema]):
-        def __init__(self, return_value: OutputSchema):
-            self._return_value = return_value
-            self.received_invoke_params = None
-
-        def invoke(self, instruction, fewshot_examples, input_json, output_json_schema):
-            self.received_invoke_params = {
-                "instruction": instruction,
-                "fewshot_examples": fewshot_examples,
-                "input_json": input_json,
-                "output_json_schema": output_json_schema,
-            }
-            return self._return_value
-
-    return DummyLLMClient
+from myllmet.metrics.components.claim_extractor import (
+    DEFAULT_FEWSHOT_EXAMPLES,
+    DEFAULT_INSTRUCTION,
+    OUTPUT_JSON_SCHEMA,
+    OutputSchema,
+)
 
 
 def test_invoke_valid(client_stub_factory):

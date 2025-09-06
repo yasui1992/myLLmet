@@ -4,7 +4,6 @@
 # No source code from RAGAS has been copied or included.
 
 
-import json
 import logging
 from typing import List, Optional, TypedDict
 
