@@ -29,5 +29,5 @@ class LLMClientInterface(Protocol, Generic[IS, OS]):
 
 @runtime_checkable
 class TrackerInterface(Protocol):
-    def log(self, record: LLMMetricsRecord) -> None:
-        pass
+    def log(self, record: LLMMetricsRecord) -> None: ...
+
