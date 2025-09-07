@@ -120,13 +120,11 @@ class Faithfulness:
         }
 
         self._tracker.log(
-            {
-                "question": question,
-                "answer": answer,
-                "context": context,
-                "ground_truth": "",  # Not used in Faithfulness score calculation
-                "score": score,
-                "prompts": prompts,
-                "intermediates": intermediates,
-            }
+            question=question,
+            answer=answer,
+            context=context,
+            ground_truth="",  # Not used in Faithfulness score calculation
+            score=score,
+            intermediates=intermediates,
+            prompts=prompts,
         )

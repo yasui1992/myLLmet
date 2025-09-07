@@ -7,7 +7,7 @@ import boto3
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
-from myllmet.metrics.interface import IS, OS, JSONSchema, LLMClientInterface
+from myllmet.metrics.interface import IS, OS, FewshotExample, JSONSchema, LLMClientInterface
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,43 @@ class BedrockChatClient(LLMClientInterface, Generic[IS, OS]):
         self.max_attempts = max_attempts
         self.max_wait = max_wait
         self._client = bedrock_runtime_client or boto3.client("bedrock-runtime")
+
+    def invoke(
+        self,
+        instruction: str,
+        fewshot_examples: List[FewshotExample[IS, OS]],
+        input_json: IS,
+        output_json_schema: JSONSchema,
+    ) -> OS:
+
+        system = [{"text": self._build_system_prompt(instruction, output_json_schema)}]
+        messages = self._build_messages(fewshot_examples, input_json)
+
+        for attempt in range(1, self.max_attempts + 1):
+            try:
+                response = self._call_converse_api(system, messages)
+
+            except ClientError as e:
+                error_code = e.response["Error"]["Code"]
+                if error_code == "ThrottlingException":
+                    logger.debug("ThrottlingException occurred: %s", e)
+                else:
+                    raise
+
+                if attempt < self.max_attempts:
+                    wait_time = min(2 ** attempt, self.max_wait)
+                    logger.debug("Retrying in %s seconds...", wait_time)
+                    time.sleep(wait_time)
+                else:
+                    logger.error("Max attempts reached (%s).", self.max_attempts)
+                    raise
+            else:
+                break
+
+        llm_text = self._parse_response(response)
+        result = json.loads(llm_text)
+
+        return result
 
     def _parse_response(self, response) -> str:
         stop_reason = response["stopReason"]
@@ -107,40 +144,3 @@ class BedrockChatClient(LLMClientInterface, Generic[IS, OS]):
         )
 
         return system
-
-    def invoke(
-        self,
-        instruction: str,
-        fewshot_examples: List,
-        input_json: IS,
-        output_json_schema: JSONSchema,
-    ) -> OS:
-
-        system = [{"text": self._build_system_prompt(instruction, output_json_schema)}]
-        messages = self._build_messages(fewshot_examples, input_json)
-
-        for attempt in range(1, self.max_attempts + 1):
-            try:
-                response = self._call_converse_api(system, messages)
-
-            except ClientError as e:
-                error_code = e.response["Error"]["Code"]
-                if error_code == "ThrottlingException":
-                    logger.debug("ThrottlingException occurred: %s", e)
-                else:
-                    raise
-
-                if attempt < self.max_attempts:
-                    wait_time = min(2 ** attempt, self.max_wait)
-                    logger.debug("Retrying in %s seconds...", wait_time)
-                    time.sleep(wait_time)
-                else:
-                    logger.error("Max attempts reached (%s).", self.max_attempts)
-                    raise
-            else:
-                break
-
-        llm_text = self._parse_response(response)
-        result = json.loads(llm_text)
-
-        return result
