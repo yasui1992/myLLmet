@@ -52,7 +52,9 @@ ruff-fix:
 
 .PHONY: jupyter
 jupyter:
-	@uvx --with .[examples] \
+	@PYTHONPATH=$(PWD)/src \
+	PYTHONDONTWRITEBYTECODE=1 \
+	uvx --with .[examples] \
 		--env-file .env \
 		jupyter lab \
 		--notebook-dir=examples \
