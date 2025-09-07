@@ -7,8 +7,10 @@ from myllmet.io_aws import BedrockChatClient
 
 
 @pytest.fixture
-def chat_client():
-    return BedrockChatClient(model_id="dummy-model")
+def chat_client(mocker):
+    fake_client = mocker.Mock()
+    mocker.patch("boto3.client", return_value=fake_client)
+    return BedrockChatClient(model_id="dummy-model", bedrock_runtime_client=fake_client)
 
 
 @pytest.fixture
