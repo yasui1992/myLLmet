@@ -1,0 +1,146 @@
+import json
+import logging
+import time
+from typing import Generic, List, Optional
+
+import boto3
+from botocore.client import BaseClient
+from botocore.exceptions import ClientError
+
+from myllmet.metrics.interface import IS, OS, JSONSchema, LLMClientInterface
+
+logger = logging.getLogger(__name__)
+
+
+class BedrockChatClient(LLMClientInterface, Generic[IS, OS]):
+    def __init__(
+        self,
+        model_id: str,
+        max_attempts: int = 5,
+        max_wait: int = 60,
+        bedrock_runtime_client: Optional[BaseClient] = None
+    ):
+        self.model_id = model_id
+        self.max_attempts = max_attempts
+        self.max_wait = max_wait
+        self._client = bedrock_runtime_client or boto3.client("bedrock-runtime")
+
+    def _parse_response(self, response) -> str:
+        stop_reason = response["stopReason"]
+
+        if stop_reason != "end_turn":
+            raise ValueError(f"Expected stopReason to be `end_turn`. Got: {stop_reason}")
+
+        message = response["output"]["message"]
+        role = message["role"]
+        contents = message["content"]
+
+        if role != "assistant":
+            raise ValueError(f"Expected role to be `assistant`. Got: {role}")
+
+        if len(contents) > 1:
+            raise ValueError(f"Expected single content. Got: {len(contents)} contents.")
+
+        return contents[0]["text"]
+
+    def _call_converse_api(self, system, messages, converse_kwargs=None):
+        logger.debug("Calling converse API with model ID: %s", self.model_id)
+
+        # TODO: Resolve temperature hardcoded value
+        request = {"system": system, "messages": messages} \
+            | {"inferenceConfig": {"temperature": 0.0}} \
+            | (converse_kwargs or {})
+        logger.debug("Sending request: %s", request)
+
+        response = self._client.converse(
+            modelId=self.model_id,
+            **request
+        )
+
+        logger.debug("Received response: %s", response)
+        return response
+
+    def _build_messages(
+        self,
+        fewshot_examples: List,
+        input_json: IS,
+    ) -> List:
+
+        messages = []
+        for ex in fewshot_examples:
+            messages += [
+                {
+                    "role": "user",
+                    "content": [
+                        {"text": json.dumps(ex["user"], ensure_ascii=False)}
+                    ]
+                },
+                {
+                    "role": "assistant",
+                    "content": [
+                        {"text": json.dumps(ex["assistant"], ensure_ascii=False)}
+                    ]
+                }
+            ]
+        messages.append({
+            "role": "user",
+            "content": [
+                {"text": json.dumps(input_json, ensure_ascii=False)}
+            ]
+        })
+
+        return messages
+
+    def _build_system_prompt(
+        self,
+        instruction: str,
+        output_json_schema: JSONSchema
+    ) -> str:
+
+        system = (
+            "<Instruction>\n"
+            f"{instruction}\n"
+            "</Instruction>\n"
+            "<Output Format>\n"
+            f"{json.dumps(output_json_schema, ensure_ascii=False)}\n"
+            "</Output Format>"
+        )
+
+        return system
+
+    def invoke(
+        self,
+        instruction: str,
+        fewshot_examples: List,
+        input_json: IS,
+        output_json_schema: JSONSchema,
+    ) -> OS:
+
+        system = [{"text": self._build_system_prompt(instruction, output_json_schema)}]
+        messages = self._build_messages(fewshot_examples, input_json)
+
+        for attempt in range(1, self.max_attempts + 1):
+            try:
+                response = self._call_converse_api(system, messages)
+
+            except ClientError as e:
+                error_code = e.response["Error"]["Code"]
+                if error_code == "ThrottlingException":
+                    logger.debug("ThrottlingException occurred: %s", e)
+                else:
+                    raise
+
+                if attempt < self.max_attempts:
+                    wait_time = min(2 ** attempt, self.max_wait)
+                    logger.debug("Retrying in %s seconds...", wait_time)
+                    time.sleep(wait_time)
+                else:
+                    logger.error("Max attempts reached (%s).", self.max_attempts)
+                    raise
+            else:
+                break
+
+        llm_text = self._parse_response(response)
+        result = json.loads(llm_text)
+
+        return result

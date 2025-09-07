@@ -1,46 +1,57 @@
-export PYTHONPATH := $(shell pwd)/src
-export PYTHONDONTWRITEBYTECODE := 1
-
-.PHONY: run-ipython
-run-ipython:
-	@uvx --with . \
+.PHONY: ipython
+ipython:
+	@PYTHONPATH=$(PWD)/src \
+	PYTHONDONTWRITEBYTECODE=1 \
+	uvx --with . \
 		--env-file .env \
 		ipython
 
-.PHONY: run-pytest
-run-pytest:
-	@uvx --with .[pandas] \
+.PHONY: pytest
+pytest:
+	@PYTHONPATH=$(PWD)/src \
+	PYTHONDONTWRITEBYTECODE=1 \
+	uv run \
+		--dev \
+		--all-extras \
 		pytest \
 		-v
 
-.PHONY: run-pytest-ci
-run-pytest-ci:
-	@uvx --with .[pandas] \
-		pytest -q --maxfail=1 --disable-warnings
+.PHONY: pytest-ci
+pytest-ci:
+	@PYTHONPATH=$(PWD)/src \
+	PYTHONDONTWRITEBYTECODE=1 \
+	uv run \
+		--dev \
+		--all-extras \
+		pytest \
+		-q \
+		--maxfail=1 \
+		--disable-warnings
 
-.PHONY: run-ruff
-run-ruff:
-	@uvx --with . \
-		ruff check \
-		src tests
-
-.PHONY: run-ruff-fix
-run-ruff-fix:
-	@uvx --with . \
-		ruff check \
-		src tests \
-		--fix
-
-.PHONY: run-mypy
-run-mypy:
+.PHONY: mypy
+mypy:
 	@uv run \
 		--dev \
 		--all-extras \
 		mypy \
 		src
 
-.PHONY: run-jupyter
-run-jupyter:
+.PHONY: ruff
+ruff:
+	@uvx --with . \
+		ruff check \
+		src tests
+
+.PHONY: ruff-fix
+ruff-fix:
+	@uvx --with . \
+		ruff check \
+		src tests \
+		--fix
+
+
+.PHONY: jupyter
+jupyter:
 	@uvx --with .[examples] \
 		--env-file .env \
 		jupyter lab \
@@ -49,6 +60,6 @@ run-jupyter:
 		--port=8888 \
 		--no-browser
 
-.PHONY: run-pre-commit-install
-run-pre-commit-install:
+.PHONY: re-commit-install
+pre-commit-install:
 	@uvx pre-commit install
