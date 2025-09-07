@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Dict, Literal
 from uuid import uuid4
 
-from myllmet.metrics.interface import LLMMetricsRecord, TrackerInterface
+from myllmet.metrics.interface import TrackerInterface
 
 if TYPE_CHECKING:
     import pandas as pd  # type: ignore[import]
@@ -13,30 +13,35 @@ class ListTracker(TrackerInterface):
         self._prompt_records = []
         self._intermediate_records = []
 
-    def log(self, record: LLMMetricsRecord) -> None:
+    def log(
+        self,
+        question: str,
+        answer: str,
+        context: str,
+        ground_truth: str,
+        score: float,
+        intermediates: Dict[str, Any],
+        prompts: Dict[str, Any],
+    ) -> None:
         id_ = str(uuid4())
         self._standard_records.append({
             "id": id_,
-            "question": record["question"],
-            "answer": record["answer"],
-            "context": record.get("context", ""),
-            "ground_truth": record.get("ground_truth", ""),
-            "score": record["score"]
+            "question": question,
+            "answer": answer,
+            "context": context,
+            "ground_truth": ground_truth,
+            "score": score
         })
 
-        prompts = record.get("prompts")
-        if prompts is not None:
-            self._prompt_records.append({
-                "id": id_,
-                **prompts
-            })
+        self._intermediate_records.append({
+            "id": id_,
+            **intermediates
+        })
 
-        intermediates = record.get("intermediates")
-        if intermediates is not None:
-            self._intermediate_records.append({
-                "id": id_,
-                **intermediates
-            })
+        self._prompt_records.append({
+            "id": id_,
+            **prompts
+        })
 
     def to_pandas(self, kind: Literal["standard", "prompts", "intermediates"]) -> "pd.DataFrame":
         import pandas as pd  # type: ignore[import]

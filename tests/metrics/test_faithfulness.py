@@ -51,8 +51,16 @@ def tracker_stub():
         def __init__(self):
             self.logged = None
 
-        def log(self, data):
-            self.logged = data
+        def log(self, question, answer, context, ground_truth, score, intermediates, prompts):
+            self.logged = {
+                "question": question,
+                "answer": answer,
+                "context": context,
+                "ground_truth": ground_truth,
+                "score": score,
+                "intermediates": intermediates,
+                "prompts": prompts
+            }
 
     return DummyTracker()
 
