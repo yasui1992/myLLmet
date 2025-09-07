@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generic, Protocol, TypeVar, runtime_checkable, TypedDict, List
+from typing import Any, Dict, Generic, List, Protocol, TypedDict, TypeVar, runtime_checkable
 
 type JSONSchema = Dict[str, Any]
 
