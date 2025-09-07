@@ -19,6 +19,11 @@ dev = [
 ]
 
 [project.optional-dependencies]
+examples = [
+    "jupyter-core<6.0,>=5.8.0",
+    "wikipedia-api>=0.8.0,<1.0",
+    "pandas<3.0,>=2.0"
+]
 pandas = [
     "pandas<3.0,>=2.0"
 ]
