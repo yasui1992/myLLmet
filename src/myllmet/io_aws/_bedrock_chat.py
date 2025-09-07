@@ -7,7 +7,7 @@ import boto3
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
 
-from myllmet.metrics.interface import IS, OS, JSONSchema, LLMClientInterface
+from myllmet.metrics.interface import IS, OS, JSONSchema, LLMClientInterface, FewshotExample
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class BedrockChatClient(LLMClientInterface, Generic[IS, OS]):
     def invoke(
         self,
         instruction: str,
-        fewshot_examples: List,  # List of TypedDict with "user" (resp. "assistant") which is mapped to IS (resp. OS)
+        fewshot_examples: List[FewshotExample[IS, OS]],
         input_json: IS,
         output_json_schema: JSONSchema,
     ) -> OS:
